@@ -2370,64 +2370,17 @@ document.addEventListener('click',function(e){ if(!e.target.closest('.search-wra
 // ── EXPORT CSV ────────────────────────────────────────────────────────────────
 function esportaCSV(){ var h=['Protocollo','Tipo','Urgente','Sinistro','N.SinCompagnia','Condominio','Polizza','Banca','Richiedente','Fornitore','Apertura','Chiusura','Stato','Note chiusura']; var rows=DB.interventi.map(function(x){ var c=DB.condomini.find(function(d){ return d.id===x.condoId; })||{nome:'',polizza:'',banca:''}; var f=(DB.fornitori.find(function(d){ return d.id===x.fornId; })||{nome:''}).nome; var p=x.persId?(DB.persone.find(function(d){ return d.id===x.persId; })||{nome:''}).nome:''; return [x.id,x.tipo,x.urgente?'SI':'NO',x.sin,x.sinComp||'',c.nome,c.polizza||'',c.banca||'',p,f,x.dataAp,x.dataCh,x.stato,x.noteCh||''].map(function(v){ return '"'+v+'"'; }).join(';'); }); var csv='\uFEFF'+[h.join(';')].concat(rows).join('\n'); var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})); a.download='HonorFix_'+oggi()+'.csv'; a.click(); }
 
-// ── GOOGLE SHEETS INTEGRATION ───────────────────────────────────────────────
-var GS = {
-  clientId:     '251012113390-pdp7t3gi78k4tcfnjem7j4j3pirn6r05.apps.googleusercontent.com',
-  clientSecret: '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',
-  refreshToken: '1//041CvCdr_Xp62CgYIARAAAQSNwF-L9IrvHwo86Pc7jOMVGqsqtNj5LEiCaNbigerQrqhmk4hawflb2FZ_NsaQepcgmN75g_lLk8',
-  sheetId:      '15T-BVvnG30nx9Wj3PgRMRnZcjcrUFzrw6l_1tsn8T3U',
-  accessToken:  null,
-  tokenExpiry:  0
-};
+// ── GOOGLE APPS SCRIPT INTEGRATION ─────────────────────────────────────────
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzChQP6L59Z73FfJgd6ZJQa-ICt2AUgj4L68CFMw0OgSg-RP2lxYPLPJiqFqbn7n5gD/exec';
 
-// Ottieni access token fresco
-async function gsGetToken() {
-  if(GS.accessToken && Date.now() < GS.tokenExpiry - 60000) return GS.accessToken;
-  var resp = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: {'Content-Type':'application/x-www-form-urlencoded'},
-    body: 'client_id='+encodeURIComponent(GS.clientId)+
-          '&client_secret='+encodeURIComponent(GS.clientSecret)+
-          '&refresh_token='+encodeURIComponent(GS.refreshToken)+
-          '&grant_type=refresh_token'
-  });
-  var data = await resp.json();
-  if(data.error) throw new Error('Token error: '+data.error);
-  GS.accessToken = data.access_token;
-  GS.tokenExpiry = Date.now() + (data.expires_in * 1000);
-  return GS.accessToken;
-}
-
-// Leggi un foglio
-async function gsRead(sheet) {
-  var token = await gsGetToken();
-  var url = 'https://sheets.googleapis.com/v4/spreadsheets/'+GS.sheetId+'/values/'+encodeURIComponent(sheet);
-  var resp = await fetch(url, { headers: {'Authorization':'Bearer '+token} });
-  var data = await resp.json();
-  return data.values || [];
-}
-
-// Scrivi un intero foglio (sovrascrive)
-async function gsWrite(sheet, rows) {
-  var token = await gsGetToken();
-  // Prima svuota
-  await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+GS.sheetId+'/values/'+encodeURIComponent(sheet)+'?valueInputOption=RAW', {
-    method: 'PUT',
-    headers: {'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-    body: JSON.stringify({ values: rows })
-  });
-}
-
-// Converti array oggetti → righe per Sheets
 function obj2rows(arr, fields) {
-  var rows = [fields]; // intestazione
+  var rows = [fields];
   arr.forEach(function(obj) {
     rows.push(fields.map(function(f) { return obj[f]!==undefined ? String(obj[f]) : ''; }));
   });
   return rows;
 }
 
-// Converti righe Sheets → array oggetti
 function rows2obj(rows) {
   if(!rows || rows.length < 2) return [];
   var headers = rows[0];
@@ -2438,23 +2391,18 @@ function rows2obj(rows) {
   });
 }
 
-// Campi per ogni entità
 var FIELDS = {
-  condomini:  ['id','nome','ind','cf','ass','agenzia','agEmail','agTel','polizza','anno','banca','iban','note'],
-  persone:    ['id','nome','ruolo','condoId','condoIds','email','pec','tel','t2','t3','cf','piva','unita'],
-  fornitori:  ['id','nome','tipo','spec','email','pec','t1','t2','t3','ind'],
-  interventi: ['id','condoId','fornId','persId','tipo','sin','urgente','stato','descr','dataAp','dataCh','noteCh','sinComp','peritoNome','peritoEmail','peritoTel','noteSin','all'],
-  programmati:['id','descr','condoId','fornId','data','ric','note']
+  Condomini:  ['id','nome','ind','cf','ass','agenzia','agEmail','agTel','polizza','anno','banca','iban','note'],
+  Persone:    ['id','nome','ruolo','condoId','condoIds','email','pec','tel','t2','t3','cf','piva','unita'],
+  Fornitori:  ['id','nome','tipo','spec','email','pec','t1','t2','t3','ind'],
+  Interventi: ['id','condoId','fornId','persId','tipo','sin','urgente','stato','descr','dataAp','dataCh','noteCh','sinComp','peritoNome','peritoEmail','peritoTel','noteSin','all'],
+  Programmati:['id','descr','condoId','fornId','data','ric','note']
 };
 
-// SALVA TUTTO su Google Sheets
 async function gsSalvaTutto() {
   try {
     toast('Salvataggio su Google Sheets...','warning');
-    var token = await gsGetToken();
 
-    // Converti condoIds (array) in stringa JSON per lo sheet
-    var condoniCopy = DB.condomini.slice();
     var personeCopy = DB.persone.map(function(p) {
       var pc = Object.assign({},p);
       if(Array.isArray(pc.condoIds)) pc.condoIds = JSON.stringify(pc.condoIds);
@@ -2466,55 +2414,66 @@ async function gsSalvaTutto() {
       xc.urgente = xc.urgente ? 'true' : 'false';
       return xc;
     });
-    var progCopy = progDB.slice();
 
-    await gsWrite('Condomini',   obj2rows(condoniCopy,    FIELDS.condomini));
-    await gsWrite('Persone',     obj2rows(personeCopy,    FIELDS.persone));
-    await gsWrite('Fornitori',   obj2rows(DB.fornitori,   FIELDS.fornitori));
-    await gsWrite('Interventi',  obj2rows(interventiCopy, FIELDS.interventi));
-    await gsWrite('Programmati', obj2rows(progCopy,       FIELDS.programmati));
+    var payload = {
+      action: 'save',
+      sheets: {
+        Condomini:   obj2rows(DB.condomini,   FIELDS.Condomini),
+        Persone:     obj2rows(personeCopy,    FIELDS.Persone),
+        Fornitori:   obj2rows(DB.fornitori,   FIELDS.Fornitori),
+        Interventi:  obj2rows(interventiCopy, FIELDS.Interventi),
+        Programmati: obj2rows(progDB,         FIELDS.Programmati)
+      }
+    };
 
-    toast('Salvato su Google Sheets!','success');
+    var resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    var result = await resp.json();
+    if(result.status === 'ok') {
+      toast('Salvato su Google Sheets!','success');
+    } else {
+      throw new Error(result.message || 'Errore sconosciuto');
+    }
   } catch(e) {
     toast('Errore salvataggio: '+e.message,'error');
     console.error(e);
   }
 }
 
-// CARICA TUTTO da Google Sheets
 async function gsCaricaTutto() {
   try {
     toast('Caricamento da Google Sheets...','warning');
 
-    var rC = await gsRead('Condomini');
-    var rP = await gsRead('Persone');
-    var rF = await gsRead('Fornitori');
-    var rI = await gsRead('Interventi');
-    var rPr = await gsRead('Programmati');
+    var resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({action: 'load'})
+    });
+    var result = await resp.json();
+    if(result.status !== 'ok') throw new Error(result.message || 'Errore caricamento');
 
-    if(rC.length > 1) DB.condomini = rows2obj(rC);
-    if(rF.length > 1) DB.fornitori = rows2obj(rF);
+    var d = result.data;
 
-    if(rP.length > 1) {
-      DB.persone = rows2obj(rP).map(function(p) {
+    if(d.Condomini && d.Condomini.length > 1) DB.condomini = rows2obj(d.Condomini);
+    if(d.Fornitori && d.Fornitori.length > 1) DB.fornitori = rows2obj(d.Fornitori);
+    if(d.Persone && d.Persone.length > 1) {
+      DB.persone = rows2obj(d.Persone).map(function(p) {
         try { if(p.condoIds) p.condoIds = JSON.parse(p.condoIds); } catch(e){ p.condoIds=[]; }
         return p;
       });
     }
-
-    if(rI.length > 1) {
-      DB.interventi = rows2obj(rI).map(function(x) {
+    if(d.Interventi && d.Interventi.length > 1) {
+      DB.interventi = rows2obj(d.Interventi).map(function(x) {
         x.urgente = x.urgente === 'true';
         try { if(x.all) x.all = JSON.parse(x.all); } catch(e){ x.all=[]; }
-        // Trova il massimo counter
         var num = parseInt(x.id.split('-').pop());
         if(!isNaN(num) && num > DB._cnt) DB._cnt = num;
         return x;
       });
     }
-
-    if(rPr.length > 1) {
-      progDB = rows2obj(rPr);
+    if(d.Programmati && d.Programmati.length > 1) {
+      progDB = rows2obj(d.Programmati);
       progCnt = progDB.length + 1;
     }
 
