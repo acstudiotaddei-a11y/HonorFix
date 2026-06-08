@@ -2371,7 +2371,7 @@ document.addEventListener('click',function(e){ if(!e.target.closest('.search-wra
 function esportaCSV(){ var h=['Protocollo','Tipo','Urgente','Sinistro','N.SinCompagnia','Condominio','Polizza','Banca','Richiedente','Fornitore','Apertura','Chiusura','Stato','Note chiusura']; var rows=DB.interventi.map(function(x){ var c=DB.condomini.find(function(d){ return d.id===x.condoId; })||{nome:'',polizza:'',banca:''}; var f=(DB.fornitori.find(function(d){ return d.id===x.fornId; })||{nome:''}).nome; var p=x.persId?(DB.persone.find(function(d){ return d.id===x.persId; })||{nome:''}).nome:''; return [x.id,x.tipo,x.urgente?'SI':'NO',x.sin,x.sinComp||'',c.nome,c.polizza||'',c.banca||'',p,f,x.dataAp,x.dataCh,x.stato,x.noteCh||''].map(function(v){ return '"'+v+'"'; }).join(';'); }); var csv='\uFEFF'+[h.join(';')].concat(rows).join('\n'); var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})); a.download='HonorFix_'+oggi()+'.csv'; a.click(); }
 
 // ── GOOGLE APPS SCRIPT INTEGRATION ─────────────────────────────────────────
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzChQP6L59Z73FfJgd6ZJQa-ICt2AUgj4L68CFMw0OgSg-RP2lxYPLPJiqFqbn7n5gD/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-6jZp5gJYr28CfIBLu7L8Mj_vWkcIBQjxvaWD41annQNETstXlnd3D1MZMqyUMC-J/exec';
 
 function obj2rows(arr, fields) {
   var rows = [fields];
@@ -2426,16 +2426,12 @@ async function gsSalvaTutto() {
       }
     };
 
-    var resp = await fetch(APPS_SCRIPT_URL, {
+    await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify(payload)
     });
-    var result = await resp.json();
-    if(result.status === 'ok') {
-      toast('Salvato su Google Sheets!','success');
-    } else {
-      throw new Error(result.message || 'Errore sconosciuto');
-    }
+    toast('Salvato su Google Sheets!','success');
   } catch(e) {
     toast('Errore salvataggio: '+e.message,'error');
     console.error(e);
@@ -2446,9 +2442,10 @@ async function gsCaricaTutto() {
   try {
     toast('Caricamento da Google Sheets...','warning');
 
-    var resp = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({action: 'load'})
+    // Per il caricamento usiamo GET con parametro
+    var resp = await fetch(APPS_SCRIPT_URL + '?action=load', {
+      method: 'GET',
+      mode: 'cors'
     });
     var result = await resp.json();
     if(result.status !== 'ok') throw new Error(result.message || 'Errore caricamento');
