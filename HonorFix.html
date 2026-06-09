@@ -2402,14 +2402,36 @@ function nuovoCondo(){ selCId=null; ['cNome','cInd','cCF','cAnno','cNote','cPoli
 
 // ── PERSONE ───────────────────────────────────────────────────────────────────
 function renderPers(){
-  qs('pCondo').innerHTML='<option value="">— nessuno —</option>'+DB.condomini.map(function(c){ return '<option value="'+c.id+'">'+c.nome+'</option>'; }).join('');
-  qs('pCondoExtra').innerHTML=DB.condomini.map(function(c){ return '<option value="'+c.id+'">'+c.nome+'</option>'; }).join('');
+  document.getElementById('pCondo').innerHTML='<option value="">— nessuno —</option>'+DB.condomini.map(function(c){ return '<option value="'+c.id+'">'+c.nome+'</option>'; }).join('');
+  document.getElementById('pCondoExtra').innerHTML=DB.condomini.map(function(c){ return '<option value="'+c.id+'">'+c.nome+'</option>'; }).join('');
+  var cols = getColPers();
+  var hdr = '<tr><th>Nome</th><th>Condomini</th>';
+  if(cols.indexOf('tel')>=0) hdr+='<th>Tel 1</th>';
+  if(cols.indexOf('t2')>=0) hdr+='<th>Tel 2</th>';
+  if(cols.indexOf('t3')>=0) hdr+='<th>Tel 3</th>';
+  if(cols.indexOf('email')>=0) hdr+='<th>Email</th>';
+  if(cols.indexOf('pec')>=0) hdr+='<th>PEC</th>';
+  if(cols.indexOf('cf')>=0) hdr+='<th>CF/P.IVA</th>';
+  if(cols.indexOf('unita')>=0) hdr+='<th>Indirizzo</th>';
+  hdr+='</tr>';
+  var thEl = document.getElementById('thPers');
+  if(thEl) thEl.innerHTML = hdr;
+  var ncols = 2 + cols.length;
   qs('tabPers').innerHTML=DB.persone.map(function(p){
     var ids=p.condoIds||(p.condoId?[p.condoId]:[]);
     var condoNomi=ids.map(function(cid){ return (DB.condomini.find(function(c){ return c.id===cid; })||{nome:'—'}).nome; }).join(', ')||'—';
-    return '<tr class="rc'+(p.id===selPId?' rs':'')+'" onclick="selPers(\''+p.id+'\')"><td><b>'+p.nome+'</b></td><td style="font-size:11px;max-width:180px">'+condoNomi+'</td><td style="font-size:12px">'+(p.email||p.pec||'—')+'</td><td>'+(p.tel||'—')+'</td><td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(p.cf||p.piva||'—')+'</td></tr>';
-  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">Nessuna persona.</td></tr>';
+    var extraCells = '';
+    if(cols.indexOf('tel')>=0) extraCells+='<td>'+(p.tel||'—')+'</td>';
+    if(cols.indexOf('t2')>=0) extraCells+='<td>'+(p.t2||'—')+'</td>';
+    if(cols.indexOf('t3')>=0) extraCells+='<td>'+(p.t3||'—')+'</td>';
+    if(cols.indexOf('email')>=0) extraCells+='<td style="font-size:12px">'+(p.email||'—')+'</td>';
+    if(cols.indexOf('pec')>=0) extraCells+='<td style="font-size:12px">'+(p.pec||'—')+'</td>';
+    if(cols.indexOf('cf')>=0) extraCells+='<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+(p.cf||p.piva||'—')+'</td>';
+    if(cols.indexOf('unita')>=0) extraCells+='<td style="font-size:12px">'+(p.unita||'—')+'</td>';
+    return '<tr class="rc'+(p.id===selPId?' rs':'')+'" onclick="selPers(\''+p.id+'\')"><td><b>'+p.nome+'</b></td><td style="font-size:11px;max-width:180px">'+condoNomi+'</td>'+extraCells+'</tr>';
+  }).join('')||'<tr><td colspan="'+ncols+'" style="text-align:center;padding:30px;color:var(--muted)">Nessuna persona.</td></tr>';
 }
+
 function selPers(id){ selPId=id; var p=DB.persone.find(function(x){ return x.id===id; }); if(!p) return; qs('pNome').value=p.nome; qs('pCondo').value=p.condoId||''; qs('pEmail').value=p.email||''; qs('pPec').value=p.pec||''; qs('pTel').value=p.tel||''; qs('pT2').value=p.t2||''; qs('pT3').value=p.t3||''; qs('pCF').value=p.cf||''; qs('pPIVA').value=p.piva||''; qs('pUnita').value=p.unita||''; qs('pId').value=id; var extra=p.condoIds||[]; var sel=qs('pCondoExtra'); for(var i=0;i<sel.options.length;i++) sel.options[i].selected=extra.indexOf(sel.options[i].value)>=0; renderPers(); }
 function salvaPers(){ var nome=qs('pNome').value.trim(); if(!nome){ toast('Inserisci il nome.','error'); return; } var cp=qs('pCondo').value; var sel=qs('pCondoExtra'); var ids=[]; for(var i=0;i<sel.options.length;i++) if(sel.options[i].selected) ids.push(sel.options[i].value); if(cp&&ids.indexOf(cp)<0) ids.unshift(cp); var dati={nome:nome,ruolo:'Condomino',condoId:cp,condoIds:ids,email:qs('pEmail').value,pec:qs('pPec').value,tel:qs('pTel').value,t2:qs('pT2').value,t3:qs('pT3').value,cf:qs('pCF').value,piva:qs('pPIVA').value,unita:qs('pUnita').value}; var eid=qs('pId').value; if(eid){ var p=DB.persone.find(function(x){ return x.id===eid; }); if(p) Object.assign(p,dati); toast('Aggiornato.','success'); } else { dati.id=uid(); DB.persone.push(dati); toast('Inserito.','success'); } nuovaPers(); ripopola(); renderPers(); }
 function eliminaPers(){ if(!selPId){ toast('Seleziona una persona.','error'); return; } if(!confirm('Eliminare?')) return; DB.persone=DB.persone.filter(function(x){ return x.id!==selPId; }); selPId=null; nuovaPers(); renderPers(); toast('Eliminato.','error'); }
@@ -2417,10 +2439,31 @@ function nuovaPers(){ selPId=null; ['pNome','pEmail','pPec','pTel','pT2','pT3','
 
 // ── FORNITORI ─────────────────────────────────────────────────────────────────
 function renderForn(){
+  var colsF = getColForn();
+  var fhdr = '<tr><th>Ragione Sociale</th><th>Tipo</th>';
+  if(colsF.indexOf('t1')>=0) fhdr+='<th>Tel 1</th>';
+  if(colsF.indexOf('t2')>=0) fhdr+='<th>Tel 2</th>';
+  if(colsF.indexOf('t3')>=0) fhdr+='<th>Tel 3</th>';
+  if(colsF.indexOf('email')>=0) fhdr+='<th>Email</th>';
+  if(colsF.indexOf('pec')>=0) fhdr+='<th>PEC</th>';
+  if(colsF.indexOf('ind')>=0) fhdr+='<th>Indirizzo</th>';
+  if(colsF.indexOf('spec')>=0) fhdr+='<th>Spec.</th>';
+  fhdr+='</tr>';
+  var thFEl = document.getElementById('thForn');
+  if(thFEl) thFEl.innerHTML = fhdr;
+  var ncols = 2 + colsF.length;
   qs('tabForn').innerHTML=DB.fornitori.map(function(f){
     var bs=f.tipo==='Assicurazione'?'background:#fef3c7;color:#92400e':'background:#dbeafe;color:#1e40af';
-    return '<tr class="rc'+(f.id===selFId?' rs':'')+'" onclick="selForn(\''+f.id+'\')"><td><b>'+f.nome+'</b></td><td><span class="badge" style="'+bs+'">'+f.tipo+'</span></td><td style="font-size:12px">'+(f.ind||'—')+'</td><td style="font-size:12px">'+f.email+'</td><td>'+f.t1+'</td></tr>';
-  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">Nessun fornitore.</td></tr>';
+    var fcells = '';
+    if(colsF.indexOf('t1')>=0) fcells+='<td>'+(f.t1&&f.t1!=='-'?f.t1:'—')+'</td>';
+    if(colsF.indexOf('t2')>=0) fcells+='<td>'+(f.t2&&f.t2!=='-'?f.t2:'—')+'</td>';
+    if(colsF.indexOf('t3')>=0) fcells+='<td>'+(f.t3&&f.t3!=='-'?f.t3:'—')+'</td>';
+    if(colsF.indexOf('email')>=0) fcells+='<td style="font-size:12px">'+(f.email||'—')+'</td>';
+    if(colsF.indexOf('pec')>=0) fcells+='<td style="font-size:12px">'+(f.pec||'—')+'</td>';
+    if(colsF.indexOf('ind')>=0) fcells+='<td style="font-size:12px">'+(f.ind||'—')+'</td>';
+    if(colsF.indexOf('spec')>=0) fcells+='<td style="font-size:12px">'+(f.spec||'—')+'</td>';
+    return '<tr class="rc'+(f.id===selFId?' rs':'')+'" onclick="selForn(\''+f.id+'\')"><td><b>'+f.nome+'</b></td><td><span class="badge" style="'+bs+'">'+f.tipo+'</span></td>'+fcells+'</tr>';
+  }).join('')||'<tr><td colspan="'+ncols+'" style="text-align:center;padding:30px;color:var(--muted)">Nessun fornitore.</td></tr>';
 }
 function selForn(id){ selFId=id; var f=DB.fornitori.find(function(x){ return x.id===id; }); if(!f) return; qs('fNome').value=f.nome; qs('fTipo').value=f.tipo; qs('fSpec').value=f.spec||''; qs('fEmail').value=f.email; qs('fPEC').value=f.pec; qs('fT1').value=f.t1; qs('fT2').value=f.t2; qs('fT3').value=f.t3; qs('fInd').value=f.ind||''; qs('fId').value=id; renderForn(); }
 function salvaForn(){ var nome=qs('fNome').value.trim(), email=qs('fEmail').value.trim(), pec=qs('fPEC').value.trim(); if(!nome){ toast('Inserisci la ragione sociale.','error'); return; } if(email&&!email.includes('@')){ toast('Email non valida!','error'); return; } if(pec&&!pec.includes('@')){ toast('PEC non valida!','error'); return; } var dati={nome:nome,tipo:qs('fTipo').value,spec:qs('fSpec').value,email:email,pec:pec,t1:qs('fT1').value,t2:qs('fT2').value,t3:qs('fT3').value,ind:qs('fInd').value}; var eid=qs('fId').value; if(eid){ var f=DB.fornitori.find(function(x){ return x.id===eid; }); if(f) Object.assign(f,dati); toast('Aggiornato.','success'); } else { dati.id=uid(); DB.fornitori.push(dati); toast('Inserito.','success'); } nuovoForn(); ripopola(); renderForn(); }
