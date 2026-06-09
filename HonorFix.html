@@ -2189,121 +2189,102 @@ function getFirma(){
 
 // ── EMAIL MODAL ───────────────────────────────────────────────────────────────
 function apriEmail(tipo){
-  var tk=editId?DB.interventi.find(function(x){ return x.id===editId; }):null;
-  // Se non c'è ancora una pratica salvata, prende i dati direttamente dai campi del form
-  var condoIdLive = qs('selCondo').value;
-  var fornIdLive = qs('selForn').value;
-  var persIdLive = qs('selPers').value;
-  var descrLive = qs('descr').value;
-  var cLive = DB.condomini.find(function(x){ return x.id===condoIdLive; })||{nome:'—',ind:'—',polizza:'—',agEmail:'',ass:'—',agenzia:'—',cf:'',iban:'',banca:''};
-  var fLive = DB.fornitori.find(function(x){ return x.id===fornIdLive; })||{nome:'—',email:'',t1:'',t2:'',t3:'',pec:''};
-  var pLive = persIdLive?(DB.persone.find(function(x){ return x.id===persIdLive; })||{nome:'',email:''}):{nome:'',email:''};
-  var c=tk?(DB.condomini.find(function(x){ return x.id===tk.condoId; })||cLive):cLive;
-  var f=tk?(DB.fornitori.find(function(x){ return x.id===tk.fornId; })||fLive):fLive;
-  var p=(tk&&tk.persId)?(DB.persone.find(function(x){ return x.id===tk.persId; })||pLive):pLive;
-  var pid=tk?tk.id:'BOZZA-'+new Date().getFullYear();
-  // Usa la descrizione dal form se tk non ha ancora dati
-  if(tk && !tk.descr) tk.descr = descrLive;
-  var allSel=allegati.filter(function(a){ return a.sel; });
-  var all=allSel.length>0?allSel.map(function(a){ return '- '+a.name; }).join('\n'):'(nessun allegato)';
-  var allNote=allSel.length>0?'\n\nNota: allegati presenti ('+allSel.length+' file) — inviarli in risposta o via email separata.':'';
-  var firma=getFirma();
-  var tit='',html='';
-  if(tipo==='fornitore'){
-    tit='Email al fornitore';
-    var isPrev = tk && tk.tipo==='Preventivo';
-    var replyTo = studio.email || 'info@studiotaddei.it';
-    var o = isPrev ?
-      'Richiesta preventivo - Prot. '+pid+' - '+c.nome :
-      'Richiesta intervento - Prot. '+pid+' - '+c.nome;
-    var b = isPrev ?
-      'Spett.le '+f.nome+',\n\ncon la presente si richiede la formulazione di un preventivo per i lavori da eseguire nel seguente condominio:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nProtocollo: '+pid+'\n\nDescrizione lavori:\n'+(tk&&tk.descr?tk.descr:descrLive)+' \n'+(allSel.length>0?'\nDocumentazione allegata:\n'+all+'\n':'')+'\nSi prega di inviare il preventivo dettagliato a: '+replyTo+'\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+firma :
-      'Spett.le '+f.nome+',\n\ncon la presente si richiede il seguente intervento di manutenzione:\n\nProtocollo: '+pid+'\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nCodice Fiscale: '+c.cf+'\n\nDescrizione intervento:\n'+(tk&&tk.descr?tk.descr:descrLive)+' \n'+(allSel.length>0?'\nDocumentazione allegata (da inviare separatamente):\n'+all+'\n':'')+'\nSi prega di citare il Protocollo sulla fattura.\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+'\n\nDati per la fatturazione:\n'+c.nome+'\n'+studio.tit+'\n'+studio.ind+'\nCodice Fiscale '+c.cf+'\nTel. '+studio.tel+' - Codice SDI '+(studio.sdi||'JHBM40P')+firma;
-    html=buildEmailForm('eDest','eOgg','eCorpo',f.email,o,b,true,f.pec);
-  } else if(tipo==='whatsapp'){
-    tit='WhatsApp al fornitore';
-    var isPrev2 = tk && tk.tipo==='Preventivo';
-    var condoNomeWA = c.nome||'—';
-    var condoIndWA = c.ind||'—';
-    var descrWA = (tk && tk.descr) ? tk.descr : (descrLive||'—');
-    var wt = isPrev2 ?
-      '*STUDIO TADDEI — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nLavori richiesti:\n'+descrWA+(allSel.length>0?'\n\n📎 Documentazione allegata ('+allSel.length+' file):\n'+allSel.map(function(a){ return '- '+a.name; }).join('\n'):'')+'\n\nPer dettagli contattare lo studio:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it') :
-      '*STUDIO TADDEI — Richiesta Intervento*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nIntervento richiesto:\n'+descrWA+(allSel.length>0?'\n\n📎 Documentazione allegata ('+allSel.length+' file):\n'+allSel.map(function(a){ return '- '+a.name; }).join('\n'):'')+'\n\nSi prega di intervenire e confermare disponibilità:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it');
-    // Costruisce selettore numeri dal fornitore
+  // ── Raccoglie dati dalla pratica o direttamente dal form ──────────────
+  var tk = editId ? DB.interventi.find(function(x){ return x.id===editId; }) : null;
+  var condoId  = tk ? tk.condoId  : qs('selCondo').value;
+  var fornId   = tk ? tk.fornId   : qs('selForn').value;
+  var persId   = tk ? tk.persId   : qs('selPers').value;
+  var descrV   = tk ? (tk.descr||'') : (qs('descr').value||'');
+  var tipoV    = tk ? (tk.tipo||'Intervento') : (qs('selTipo') ? qs('selTipo').value : 'Intervento');
+  var pid      = tk ? tk.id : 'BOZZA-'+new Date().getFullYear();
+
+  var c = DB.condomini.find(function(x){ return x.id===condoId; })
+        || {nome:'—',ind:'—',cf:'',polizza:'—',agEmail:'',ass:'—',agenzia:'—',iban:'',banca:''};
+  var f = DB.fornitori.find(function(x){ return x.id===fornId; })
+        || {nome:'—',email:'',t1:'',t2:'',t3:'',pec:''};
+  var p = persId ? (DB.persone.find(function(x){ return x.id===persId; })||{nome:'',email:''}) : {nome:'',email:''};
+
+  // ── Allegati selezionati ──────────────────────────────────────────────
+  var allSel = allegati.filter(function(a){ return a.sel; });
+  var allTxt = allSel.length > 0
+    ? '\nDocumentazione allegata:\n' + allSel.map(function(a){ return '- '+a.name; }).join('\n') + '\n'
+    : '';
+
+  var firma   = getFirma();
+  var replyTo = studio.email || 'info@studiotaddei.it';
+  var isPrev  = tipoV === 'Preventivo';
+
+  // ── Corpo email ───────────────────────────────────────────────────────
+  var titolo = '', corpo = '';
+
+  if(tipo === 'fornitore'){
+    titolo = isPrev ? 'Email preventivo al fornitore' : 'Email intervento al fornitore';
+    var oggetto = isPrev
+      ? 'Richiesta preventivo - Prot. '+pid+' - '+c.nome
+      : 'Richiesta intervento - Prot. '+pid+' - '+c.nome;
+    var body = isPrev
+      ? 'Spett.le '+f.nome+',\n\ncon la presente si richiede la formulazione di un preventivo per i lavori da eseguire nel seguente condominio:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nProtocollo: '+pid+'\n\nDescrizione lavori:\n'+descrV+' \n'+allTxt+'\nSi prega di inviare il preventivo dettagliato a: '+replyTo+'\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+firma
+      : 'Spett.le '+f.nome+',\n\ncon la presente si richiede il seguente intervento di manutenzione:\n\nProtocollo: '+pid+'\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nCodice Fiscale: '+c.cf+'\n\nDescrizione intervento:\n'+descrV+' \n'+allTxt+'\nSi prega di citare il Protocollo sulla fattura.\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+'\n\nDati per la fatturazione:\n'+c.nome+'\n'+studio.tit+'\n'+studio.ind+'\nCodice Fiscale '+c.cf+'\nTel. '+studio.tel+' - Codice SDI '+(studio.sdi||'JHBM40P')+firma;
+    corpo = buildEmailForm('eDest','eOgg','eCorpo', f.email, oggetto, body, true, f.pec);
+
+  } else if(tipo === 'sinistro'){
+    titolo = 'Email denuncia sinistro';
+    var oSin = 'Denuncia sinistro - '+c.nome+' - Polizza '+c.polizza;
+    var bSin = 'Spett.le '+c.agenzia+',\n\ncon la presente si denuncia il seguente sinistro:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nPolizza: '+c.polizza+'\nData sinistro: '+(tk?tk.dataAp:'')+'\n\nDescrizione:\n'+descrV+' \n'+allTxt+'\nCoordinate bancarie per eventuale liquidazione:\n'+c.banca+' - IBAN: '+c.iban+firma;
+    corpo = buildEmailForm('eDest2','eOgg2','eCorpo2', c.agEmail, oSin, bSin, false, '');
+
+  } else if(tipo === 'perito'){
+    titolo = 'Email al perito';
+    var pNome  = qs('peritoNome')  ? qs('peritoNome').value  : '';
+    var pEmail = qs('peritoEmail') ? qs('peritoEmail').value : '';
+    var oPer   = 'Sinistro '+c.nome+' - Incarico perizia';
+    var bPer   = 'Gentile '+pNome+',\n\nLe affidiamo l\'incarico di perizia per il sinistro presso:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nPolizza: '+c.polizza+'\n\nDescrizione danno:\n'+descrV+' \n'+allTxt+firma;
+    corpo = buildEmailForm('eDest3','eOgg3','eCorpo3', pEmail, oPer, bPer, false, '');
+
+  } else if(tipo === 'conferma'){
+    titolo = 'Email conferma richiedente';
+    var oConf = 'Pratica '+pid+' — Richiesta presa in carico — '+c.nome;
+    var bConf = 'Gentile '+(p.nome||'Condomino')+',\n\nla Sua richiesta è stata presa in carico.\n\nProtocollo: '+pid+'\nCondominio: '+c.nome+'\nDescrizione: '+descrV+'\nIntervento assegnato a: '+f.nome+'\nData apertura: '+(tk?tk.dataAp:'')+firma;
+    corpo = buildEmailForm('eDest4','eOgg4','eCorpo4', p.email, oConf, bConf, false, '');
+
+  } else if(tipo === 'whatsapp'){
+    titolo = 'WhatsApp al fornitore';
+    // Testo messaggio
+    var allWA = allSel.length > 0
+      ? '\n\n📎 Documentazione allegata ('+allSel.length+' file):\n'+allSel.map(function(a){ return '- '+a.name; }).join('\n')
+      : '';
+    var testoWA = isPrev
+      ? '*STUDIO TADDEI — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\n\nLavori richiesti:\n'+descrV+allWA+'\n\nPer dettagli contattare lo studio:\nTel: '+studio.tel+'\nEmail: '+studio.email
+      : '*STUDIO TADDEI — Richiesta Intervento*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\n\nIntervento richiesto:\n'+descrV+allWA+'\n\nSi prega di intervenire e confermare disponibilità:\nTel: '+studio.tel+'\nEmail: '+studio.email;
+    // Selettore numeri
     var numeri = [];
-    if(f.t1&&f.t1.trim()&&f.t1!=='-') numeri.push({label:'Tel 1: '+f.t1, val:f.t1});
-    if(f.t2&&f.t2.trim()&&f.t2!=='-') numeri.push({label:'Tel 2: '+f.t2, val:f.t2});
-    if(f.t3&&f.t3.trim()&&f.t3!=='-') numeri.push({label:'Tel 3: '+f.t3, val:f.t3});
+    if(f.t1 && f.t1.trim() && f.t1 !== '-') numeri.push({label:'Tel 1: '+f.t1, val:f.t1});
+    if(f.t2 && f.t2.trim() && f.t2 !== '-') numeri.push({label:'Tel 2: '+f.t2, val:f.t2});
+    if(f.t3 && f.t3.trim() && f.t3 !== '-') numeri.push({label:'Tel 3: '+f.t3, val:f.t3});
     var numHTML = '';
     if(numeri.length > 1){
-      // Più numeri - mostra selettore
-      numHTML = '<label>Seleziona numero WhatsApp</label>'+
-        '<select id="wNum" style="margin-bottom:12px">'+
-        numeri.map(function(n){ return '<option value="'+n.val+'">'+n.label+'</option>'; }).join('')+
-        '</select>';
+      numHTML = '<label>Seleziona numero WhatsApp</label><select id="wNum" style="margin-bottom:12px">'
+        + numeri.map(function(n){ return '<option value="'+n.val+'">'+n.label+'</option>'; }).join('')
+        + '</select>';
     } else if(numeri.length === 1){
-      // Un solo numero - pre-compilato
-      numHTML = '<label>Numero WhatsApp (da anagrafica fornitore)</label>'+
-        '<div style="display:flex;gap:8px;margin-bottom:12px">'+
-        '<input type="tel" id="wNum" value="'+numeri[0].val+'" style="margin-bottom:0;flex:1">'+
-        '<span style="font-size:11px;color:var(--success);align-self:center">✓ '+f.nome+'</span>'+
-        '</div>';
+      numHTML = '<label>Numero WhatsApp <span style="color:var(--success);font-size:11px">✓ da anagrafica</span></label>'
+        + '<input type="tel" id="wNum" value="'+numeri[0].val+'" style="margin-bottom:12px">';
     } else {
-      // Nessun numero in anagrafica
-      numHTML = '<label>Numero WhatsApp <span style="color:var(--warning)">(non presente in anagrafica — inserisci manualmente)</span></label>'+
-        '<input type="tel" id="wNum" placeholder="+39 ..." style="margin-bottom:12px">';
+      numHTML = '<label>Numero WhatsApp <span style="color:var(--warning);font-size:11px">(non in anagrafica — inserisci)</span></label>'
+        + '<input type="tel" id="wNum" placeholder="+39 ..." style="margin-bottom:12px">';
     }
-    html = numHTML+
-      '<label>Testo (modificabile)</label>'+
-      '<textarea id="wTxt" rows="10">'+wt+'</textarea>'+
-      '<div class="btn-grp" style="margin-top:8px">'+
-      '<button class="btn btn-success" onclick="inviaWA()">📱 Apri WhatsApp</button>'+
-      '<button class="btn btn-outline" onclick="chiudiModal(&quot;modalEmail&quot;)">Annulla</button>'+
-      '</div>';
-  } else if(tipo==='conferma'){
-    tit='Email conferma richiedente';
-    var o2='Pratica '+pid+' — Richiesta presa in carico — '+c.nome;
-    var b2='Gentile '+(p.nome||'Condomino')+',\n\nla Sua richiesta è stata presa in carico.\n\nProtocollo: '+pid+'\nCondominio: '+c.nome+'\nDescrizione: '+(tk?tk.descr:'')+'\nIntervento assegnato a: '+f.nome+'\nData apertura: '+(tk?tk.dataAp:'')+firma;
-    html=buildEmailForm('eDest','eOgg','eCorpo',p.email,o2,b2,false,'');
-  } else if(tipo==='agenzia'){
-    tit='Email apertura sinistro';
-    var sc=qs('sinComp')?qs('sinComp').value:'';
-    var ns=qs('noteSin')?qs('noteSin').value:'';
-    var replyTo2 = studio.email||'info@studiotaddei.it';
-    var danTxt2='';
-    var danList2 = (tk && tk.danneggiati) ? tk.danneggiati : danneggiati;
-    if(danList2.length>0){
-      danTxt2='\nparti interessate:\n';
-      danList2.forEach(function(d){
-        danTxt2+=d.nome;
-        if(d.ind) danTxt2+='\n'+d.ind;
-        if(d.tel) danTxt2+='\n'+d.tel;
-        if(d.email) danTxt2+='\n'+d.email;
-        danTxt2+='\n\n';
-      });
-    }
-    var o3='Denuncia sinistro - Polizza '+c.polizza+' - ns. rif. '+(sc||pid)+' - '+c.nome;
-    var b3='Spett.le '+(c.agenzia||'Spettabile Agenzia')+','+
-      '\n\ncon la presente si denuncia il sinistro ns. rif. '+(sc||'da assegnare (da citare nelle future missive)')+' di cui si elenca:'+
-      '\n\ncondominio:\n'+c.nome+' - '+c.ind+' - Codice fiscale '+c.cf+
-      '\n\npolizza:\nn. '+c.polizza+
-      '\n\ndata sinistro:\n'+(tk?tk.dataAp:'')+
-      '\n\ndescrizione:\n'+(tk?tk.descr:'')+(ns?'\n'+ns:'')+
-      danTxt2+
-      '\nRiferimenti impresa intervenuta (fornitore):\n'+(f.nome||'- -')+' - '+(f.t1||'Telefono')+
-      '\n\nCoordinate bancarie condominio:\n'+c.nome+' - '+(c.banca||'')+' - '+(c.iban||'')+
-      firma;
-    html=buildEmailForm('eDest','eOgg','eCorpo',c.agEmail,o3,b3,false,'');
-  } else if(tipo==='perito'){
-    tit='Documentazione al perito';
-    var pn=qs('peritoNome')?qs('peritoNome').value:'';
-    var pe=qs('peritoEmail')?qs('peritoEmail').value:'';
-    var sc2=qs('sinComp')?qs('sinComp').value:'';
-    var o4='Sinistro '+pid+' — Documentazione';
-    var b4='Gentile Perito '+pn+',\n\nsi trasmette documentazione:\n\nCondominio: '+c.nome+'\nProtocollo: '+pid+'\nN. Sinistro: '+(sc2||'—')+'\n\nDocumenti: '+all+firma;
-    html=buildEmailForm('eDest','eOgg','eCorpo',pe,o4,b4,false,'');
+    corpo = numHTML
+      + '<label>Testo (modificabile)</label>'
+      + '<textarea id="wTxt" rows="10">'+testoWA+'</textarea>'
+      + '<div class="btn-grp" style="margin-top:8px">'
+      + '<button class="btn btn-success" onclick="inviaWA()">📱 Apri WhatsApp</button>'
+      + '<button class="btn btn-outline" onclick="chiudiModal(\'modalEmail\')">Annulla</button>'
+      + '</div>';
   }
-  qs('mEmailTit').textContent=tit; qs('mEmailBody').innerHTML=html;
+
+  // ── Apre il modal ─────────────────────────────────────────────────────
+  qs('mEmailTit').textContent = titolo;
+  qs('mEmailBody').innerHTML  = corpo;
   qs('modalEmail').classList.add('open');
 }
 
