@@ -330,6 +330,9 @@ tr.rs{background:#eff6ff!important;}
           <div style="font-size:11px;color:var(--light);margin-top:4px">JPG, PNG, PDF — spunta i file da inviare</div>
         </div>
         <div class="file-list" id="fileList"></div>
+        <button class="btn btn-warning btn-full" style="margin-top:4px" onclick="salvaSincronizza()">
+          💾 Salva e sincronizza — aggiorna per tutti
+        </button>
       </div>
       <div class="card">
         <div class="card-title">Comunicazioni</div>
@@ -338,7 +341,7 @@ tr.rs{background:#eff6ff!important;}
           <div class="col"><button class="btn btn-primary btn-full" onclick="apriEmail('fornitore')">📧 Email fornitore</button></div>
           <div class="col"><button class="btn btn-outline btn-full" onclick="apriEmail('conferma')">✉️ Conferma richiedente</button></div>
         </div>
-        <div style="margin-top:8px"><button class="btn btn-warning btn-full" onclick="salvaPratica()">💾 Salva pratica</button></div>
+
       </div>
       <div class="card" id="cardChiusura" style="display:none">
         <div class="card-title">Chiusura Intervento</div>
@@ -2142,6 +2145,14 @@ function salvaPratica(){
   aggiornaBadge(); controllaScadenze(); setTimeout(gsSalvaTutto,500);
 }
 
+async function salvaSincronizza(){
+  // Prima salva la pratica localmente
+  salvaPratica();
+  // Poi sincronizza subito con Google Sheets
+  await gsSalvaTutto();
+  toast('Pratica salvata e sincronizzata per tutti!','success');
+}
+
 function nuovaPratica(){
   editId=null;
   qs('titoloPanel').textContent='Nuovo Intervento';
@@ -2183,7 +2194,9 @@ function apriEmail(tipo){
   var f=tk?(DB.fornitori.find(function(x){ return x.id===tk.fornId; })||{nome:'—',email:'',t1:'',pec:''}):{nome:'—',email:'',t1:'',pec:''};
   var p=(tk&&tk.persId)?(DB.persone.find(function(x){ return x.id===tk.persId; })||{nome:'',email:''}):{nome:'',email:''};
   var pid=tk?tk.id:'(salva prima)';
-  var all=allegati.filter(function(a){ return a.sel; }).map(function(a){ return a.name; }).join(', ')||'nessun allegato';
+  var allSel=allegati.filter(function(a){ return a.sel; });
+  var all=allSel.length>0?allSel.map(function(a){ return '- '+a.name; }).join('\n'):'(nessun allegato)';
+  var allNote=allSel.length>0?'\n\nNota: allegati presenti ('+allSel.length+' file) — inviarli in risposta o via email separata.':'';
   var firma=getFirma();
   var tit='',html='';
   if(tipo==='fornitore'){
@@ -2195,7 +2208,7 @@ function apriEmail(tipo){
       'Richiesta intervento - Prot. '+pid+' - '+c.nome;
     var b = isPrev ?
       'Spett.le '+f.nome+',\n\ncon la presente si richiede la formulazione di un preventivo per i lavori da eseguire nel seguente condominio:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nCodice Fiscale: '+c.cf+'\nProtocollo: '+pid+'\n\nDescrizione lavori:\n'+(tk?tk.descr:'')+' \n\nSi prega di inviare il preventivo dettagliato a: '+replyTo+'\n\nDati per la fatturazione:\n'+c.nome+'\n'+studio.tit+'\n'+studio.ind+'\nCodice Fiscale '+c.cf+'\nTel. '+studio.tel+' - Codice SDI '+(studio.sdi||'JHBM40P')+'\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+firma :
-      'Spett.le '+f.nome+',\n\ncon la presente si richiede il seguente intervento di manutenzione:\n\nProtocollo: '+pid+'\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nCodice Fiscale: '+c.cf+'\n\nDescrizione intervento:\n'+(tk?tk.descr:'')+' \n\nSi prega di citare il Protocollo sulla fattura.\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+'\n\nDati per la fatturazione:\n'+c.nome+'\n'+studio.tit+'\n'+studio.ind+'\nCodice Fiscale '+c.cf+'\nTel. '+studio.tel+' - Codice SDI '+(studio.sdi||'JHBM40P')+firma;
+      'Spett.le '+f.nome+',\n\ncon la presente si richiede il seguente intervento di manutenzione:\n\nProtocollo: '+pid+'\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nCodice Fiscale: '+c.cf+'\n\nDescrizione intervento:\n'+(tk?tk.descr:'')+' \n'+(allSel.length>0?'\nAllegati:\n'+all+'\n':'')+'\nSi prega di citare il Protocollo sulla fattura.\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+'\n\nDati per la fatturazione:\n'+c.nome+'\n'+studio.tit+'\n'+studio.ind+'\nCodice Fiscale '+c.cf+'\nTel. '+studio.tel+' - Codice SDI '+(studio.sdi||'JHBM40P')+firma;
     html=buildEmailForm('eDest','eOgg','eCorpo',f.email,o,b,true,f.pec);
   } else if(tipo==='whatsapp'){
     tit='WhatsApp al fornitore';
@@ -2204,8 +2217,8 @@ function apriEmail(tipo){
     var condoIndWA = c.ind||'—';
     var descrWA = tk ? tk.descr : '—';
     var wt = isPrev2 ?
-      '*STUDIO TADDEI — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nLavori richiesti:\n'+descrWA+'\n\nContattare lo studio per dettagli:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it') :
-      '*STUDIO TADDEI — Richiesta Intervento*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nIntervento richiesto:\n'+descrWA+'\n\nSi prega di intervenire e confermare disponibilità:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it');
+      '*STUDIO TADDEI — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nLavori richiesti:\n'+descrWA+(allSel&&allSel.length>0?'\n\n📎 Allegati ('+allSel.length+'):\n'+allSel.map(function(a){ return '- '+a.name; }).join('\n'):'')+'\n\nContattare lo studio per dettagli:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it') :
+      '*STUDIO TADDEI — Richiesta Intervento*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nIntervento richiesto:\n'+descrWA+(allSel&&allSel.length>0?'\n\n📎 Allegati ('+allSel.length+'):\n'+allSel.map(function(a){ return '- '+a.name; }).join('\n'):'')+'\n\nSi prega di intervenire e confermare disponibilità:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it');
     // Costruisce selettore numeri dal fornitore
     var numeri = [];
     if(f.t1&&f.t1.trim()&&f.t1!=='-') numeri.push({label:'Tel 1: '+f.t1, val:f.t1});
@@ -2239,8 +2252,8 @@ function apriEmail(tipo){
       '</div>';
   } else if(tipo==='conferma'){
     tit='Email conferma richiedente';
-    var o2='Pratica '+pid+' — Richiesta presa in carico';
-    var b2='Gentile '+(p.nome||'Condomino')+',\n\nla Sua richiesta è stata presa in carico (Prot. '+pid+').\n\nIntervento assegnato a: '+f.nome+'\nData apertura: '+(tk?tk.dataAp:'')+firma;
+    var o2='Pratica '+pid+' — Richiesta presa in carico — '+c.nome;
+    var b2='Gentile '+(p.nome||'Condomino')+',\n\nla Sua richiesta è stata presa in carico.\n\nProtocollo: '+pid+'\nCondominio: '+c.nome+'\nDescrizione: '+(tk?tk.descr:'')+'\nIntervento assegnato a: '+f.nome+'\nData apertura: '+(tk?tk.dataAp:'')+firma;
     html=buildEmailForm('eDest','eOgg','eCorpo',p.email,o2,b2,false,'');
   } else if(tipo==='agenzia'){
     tit='Email apertura sinistro';
