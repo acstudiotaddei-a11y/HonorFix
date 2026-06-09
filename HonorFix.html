@@ -280,9 +280,26 @@ tr.rs{background:#eff6ff!important;}
             <textarea id="noteSin" rows="2" style="padding-right:44px"></textarea>
             <button class="mic-btn" id="micSin" onclick="toggleMic('noteSin','micSin')" title="Detta">🎙</button>
           </div>
+          <div style="background:#f3e8ff;border:1px solid #d8b4fe;border-radius:8px;padding:12px;margin-top:8px;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:8px">Verifiche prima dell'invio all'assicurazione:</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin:0;cursor:pointer">
+                <input type="checkbox" id="chkPerizia" onchange="aggiornaInvioAss()" style="width:16px;height:16px;margin:0;accent-color:var(--purple)">
+                Perizia / sopralluogo eseguito
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin:0;cursor:pointer">
+                <input type="checkbox" id="chkFoto" onchange="aggiornaInvioAss()" style="width:16px;height:16px;margin:0;accent-color:var(--purple)">
+                Foto presenti
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin:0;cursor:pointer">
+                <input type="checkbox" id="chkDocs" onchange="aggiornaInvioAss()" style="width:16px;height:16px;margin:0;accent-color:var(--purple)">
+                Documentazione presente
+              </label>
+            </div>
+          </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
             <button class="btn btn-purple btn-sm" onclick="apriEmail('agenzia')">📧 Email apertura sinistro</button>
-            <button class="btn btn-purple btn-sm" onclick="apriEmail('perito')">📎 Documentazione al perito</button>
+            <button class="btn btn-purple btn-sm" id="btnInvioPerito" onclick="apriEmail('perito')" disabled style="opacity:0.45;cursor:not-allowed" title="Spunta tutte le verifiche prima di inviare">📎 Invia documentazione al perito</button>
           </div>
         </div>
         <div class="divider"></div>
@@ -402,8 +419,18 @@ tr.rs{background:#eff6ff!important;}
         </div>
       </div>
       <div class="card">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:var(--muted)">Colonne visibili:</span>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="email" onchange="aggiornaColonnePers()" checked> Email</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="pec" onchange="aggiornaColonnePers()"> PEC</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="tel" onchange="aggiornaColonnePers()" checked> Tel 1</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="t2" onchange="aggiornaColonnePers()" checked> Tel 2</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="t3" onchange="aggiornaColonnePers()" checked> Tel 3</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="cf" onchange="aggiornaColonnePers()"> CF/P.IVA</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="unita" onchange="aggiornaColonnePers()"> Indirizzo</label>
+        </div>
         <div class="tw" style="margin-bottom:16px">
-          <table><thead><tr><th>Nome</th><th>Condomini</th><th>Email</th><th>Tel 1</th><th>C.F. / P.IVA</th></tr></thead>
+          <table><thead id="thPers"><tr><th>Nome</th><th>Condomini</th><th>Email</th><th>Tel 1</th><th>Tel 2</th><th>Tel 3</th><th>CF / P.IVA</th></tr></thead>
           <tbody id="tabPers"></tbody></table>
         </div>
         <div class="card-title">Modulo</div>
@@ -428,9 +455,20 @@ tr.rs{background:#eff6ff!important;}
         </div>
       </div>
       <div class="card">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:var(--muted)">Colonne visibili:</span>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="ind" onchange="aggiornaColonneForn()"> Indirizzo</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="email" onchange="aggiornaColonneForn()" checked> Email</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="pec" onchange="aggiornaColonneForn()"> PEC</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="t1" onchange="aggiornaColonneForn()" checked> Tel 1</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="t2" onchange="aggiornaColonneForn()" checked> Tel 2</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="t3" onchange="aggiornaColonneForn()" checked> Tel 3</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="spec" onchange="aggiornaColonneForn()"> Specializzazione</label>
+        </div>
         <div class="tw" style="margin-bottom:16px">
-          <table><thead><tr><th>Ragione Sociale</th><th>Tipo</th><th>Indirizzo</th><th>Email</th><th>Tel 1</th></tr></thead>
+          <table id="tableForn"><thead id="thForn"><tr><th>Ragione Sociale</th><th>Tipo</th><th>Email</th><th>Tel 1</th><th>Tel 2</th><th>Tel 3</th></tr></thead>
           <tbody id="tabForn"></tbody></table>
+        </div>
         </div>
         <div class="card-title">Modulo</div>
         <div class="row"><div class="col2"><label>Ragione Sociale</label><input type="text" id="fNome"></div><div class="col"><label>Tipo</label><select id="fTipo"><option value="Fornitore">Fornitore tecnico</option><option value="Assicurazione">Compagnia assicurativa</option></select></div><div class="col"><label>Specializzazione</label><input type="text" id="fSpec"></div></div>
@@ -1863,8 +1901,8 @@ function goPanel(nome, el){
   if(nome==='registro'){ renderReg(); }
   if(nome==='statistiche'){ qs('stCondo').innerHTML='<option value="">Tutti</option>'+DB.condomini.map(function(c){ return '<option value="'+c.id+'">'+c.nome+'</option>'; }).join(''); renderStat(); }
   if(nome==='condomini'){ renderCondo(); }
-  if(nome==='persone'){ renderPers(); }
-  if(nome==='fornitori'){ renderForn(); }
+  if(nome==='persone'){ renderPers(); setTimeout(initColPers,50); }
+  if(nome==='fornitori'){ renderForn(); setTimeout(initColForn,50); }
   if(nome==='calendario'){ qs('calCondo').innerHTML='<option value="">Tutti</option>'+DB.condomini.map(function(c){ return '<option value="'+c.id+'">'+c.nome+'</option>'; }).join(''); renderCal(); }
 }
 
@@ -1916,6 +1954,18 @@ function toggleSin(){
   var v = qs('isSinistro').value;
   qs('sinSec').style.display = v==='Si'?'block':'none';
   if(v==='Si'&&editId) qs('sinStudio').value=editId;
+  aggiornaInvioAss();
+}
+
+function aggiornaInvioAss(){
+  var btn = qs('btnInvioPerito');
+  if(!btn) return;
+  var ok = qs('chkPerizia') && qs('chkFoto') && qs('chkDocs') &&
+           qs('chkPerizia').checked && qs('chkFoto').checked && qs('chkDocs').checked;
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '0.45';
+  btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+  btn.title = ok ? 'Invia documentazione al perito' : 'Spunta tutte le verifiche prima di inviare';
 }
 
 // Auto-compila dati fornitore nel Set Intervento
@@ -2052,14 +2102,20 @@ function apriEmail(tipo){
   var tit='',html='';
   if(tipo==='fornitore'){
     tit='Email al fornitore';
-    var o='Pratica '+pid+' — Intervento richiesto';
-    var b='Spett.le '+f.nome+',\n\nsi richiede intervento presso:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nProtocollo: '+pid+'\nDescrizione: '+(tk?tk.descr:'')+'\nData: '+(tk?tk.dataAp:'')+'\n\nAllegati: '+all+firma;
+    var isPrev = tk && tk.tipo==='Preventivo';
+    var o = isPrev ? 'Richiesta preventivo — Pratica '+pid : 'Pratica '+pid+' — Intervento richiesto';
+    var b = isPrev ?
+      'Spett.le '+f.nome+',\n\nla contattamo per richiedere un preventivo per i lavori presso:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nProtocollo: '+pid+'\nDescrizione lavori: '+(tk?tk.descr:'')+' \nData richiesta: '+(tk?tk.dataAp:'')+' \n\nSi richiede cortesemente di inviare un preventivo dettagliato entro i prossimi giorni lavorativi.\n\nAllegati: '+all+firma :
+      'Spett.le '+f.nome+',\n\nsi richiede intervento urgente presso:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nProtocollo: '+pid+'\nDescrizione: '+(tk?tk.descr:'')+' \nData apertura: '+(tk?tk.dataAp:'')+' \n\nSi prega di intervenire nel più breve tempo possibile e di contattare lo studio per confermare la disponibilità.\n\nAllegati: '+all+firma;
     html=buildEmailForm('eDest','eOgg','eCorpo',f.email,o,b,true,f.pec);
   } else if(tipo==='whatsapp'){
     tit='WhatsApp al fornitore';
-    var wt='*HonorFix — '+pid+'*\n\nCondominio: '+c.nome+'\nIntervento: '+(tk?tk.descr:'')+'\nData: '+(tk?tk.dataAp:'')+'\n\nContattare lo studio per conferma.';
-    html='<label>Numero WhatsApp</label><input type="tel" id="wNum" value="'+f.t1+'" style="margin-bottom:12px"><label>Testo</label><textarea id="wTxt" rows="8">'+wt+'</textarea><div class="btn-grp" style="margin-top:8px"><button class="btn btn-success" onclick="inviaWA()">Apri WhatsApp</button><button class="btn btn-outline" onclick="chiudiModal(\'modalEmail\')">Annulla</button></div>';
-  } else if(tipo==='conferma'){
+    var isPrev2 = tk && tk.tipo==='Preventivo';
+    var wt = isPrev2 ?
+      '*HonorFix — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nLavori: '+(tk?tk.descr:'')+' \nData: '+(tk?tk.dataAp:'')+' \n\nSi richiede preventivo. Contattare lo studio per dettagli.' :
+      '*HonorFix — Intervento Richiesto*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nProblema: '+(tk?tk.descr:'')+' \nData: '+(tk?tk.dataAp:'')+' \n\nSi prega di intervenire. Contattare lo studio per conferma.';
+    html='<label>Numero WhatsApp</label><input type="tel" id="wNum" value="'+f.t1+'" style="margin-bottom:12px"><label>Testo (modificabile)</label><textarea id="wTxt" rows="9">'+wt+'</textarea><div class="btn-grp" style="margin-top:8px"><button class="btn btn-success" onclick="inviaWA()">Apri WhatsApp</button><button class="btn btn-outline" onclick="chiudiModal('modalEmail')">Annulla</button></div>';
+  } else if(tipo==='conferma')} else if(tipo==='conferma'){
     tit='Email conferma richiedente';
     var o2='Pratica '+pid+' — Richiesta presa in carico';
     var b2='Gentile '+(p.nome||'Condomino')+',\n\nla Sua richiesta è stata presa in carico (Prot. '+pid+').\n\nIntervento assegnato a: '+f.nome+'\nData apertura: '+(tk?tk.dataAp:'')+firma;
@@ -2105,6 +2161,40 @@ function inviaWA(){
 }
 
 function apriWA(){ var num=qs('fT1').value.replace(/\s/g,''); if(!num){ toast('Nessun numero Tel 1.','error'); return; } if(num.charAt(0)==='+') num=num.substring(1); window.open('https://wa.me/'+num); }
+
+// ── COLONNE DINAMICHE PERSONE ────────────────────────────────────────────────
+function getColPers(){
+  var saved = localStorage.getItem('honorfix_col_pers');
+  if(saved) return JSON.parse(saved);
+  return ['email','tel','t2','t3'];
+}
+function aggiornaColonnePers(){
+  var checked = [];
+  document.querySelectorAll('.colPers').forEach(function(cb){ if(cb.checked) checked.push(cb.value); });
+  localStorage.setItem('honorfix_col_pers', JSON.stringify(checked));
+  renderPers();
+}
+function initColPers(){
+  var saved = getColPers();
+  document.querySelectorAll('.colPers').forEach(function(cb){ cb.checked = saved.indexOf(cb.value) >= 0; });
+}
+
+// ── COLONNE DINAMICHE FORNITORI ──────────────────────────────────────────────
+function getColForn(){
+  var saved = localStorage.getItem('honorfix_col_forn');
+  if(saved) return JSON.parse(saved);
+  return ['email','t1','t2','t3'];
+}
+function aggiornaColonneForn(){
+  var checked = [];
+  document.querySelectorAll('.colForn').forEach(function(cb){ if(cb.checked) checked.push(cb.value); });
+  localStorage.setItem('honorfix_col_forn', JSON.stringify(checked));
+  renderForn();
+}
+function initColForn(){
+  var saved = getColForn();
+  document.querySelectorAll('.colForn').forEach(function(cb){ cb.checked = saved.indexOf(cb.value) >= 0; });
+}
 function chiudiModal(id){ qs(id).classList.remove('open'); }
 
 // ── REGISTRO ──────────────────────────────────────────────────────────────────
