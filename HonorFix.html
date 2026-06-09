@@ -2190,10 +2190,20 @@ function getFirma(){
 // ── EMAIL MODAL ───────────────────────────────────────────────────────────────
 function apriEmail(tipo){
   var tk=editId?DB.interventi.find(function(x){ return x.id===editId; }):null;
-  var c=tk?(DB.condomini.find(function(x){ return x.id===tk.condoId; })||{nome:'—',ind:'—',polizza:'—',agEmail:'',ass:'—',agenzia:'—',iban:'',banca:''}):{nome:'—',ind:'—',polizza:'—',agEmail:'',ass:'—',agenzia:'—'};
-  var f=tk?(DB.fornitori.find(function(x){ return x.id===tk.fornId; })||{nome:'—',email:'',t1:'',pec:''}):{nome:'—',email:'',t1:'',pec:''};
-  var p=(tk&&tk.persId)?(DB.persone.find(function(x){ return x.id===tk.persId; })||{nome:'',email:''}):{nome:'',email:''};
-  var pid=tk?tk.id:'(salva prima)';
+  // Se non c'è ancora una pratica salvata, prende i dati direttamente dai campi del form
+  var condoIdLive = qs('selCondo').value;
+  var fornIdLive = qs('selForn').value;
+  var persIdLive = qs('selPers').value;
+  var descrLive = qs('descr').value;
+  var cLive = DB.condomini.find(function(x){ return x.id===condoIdLive; })||{nome:'—',ind:'—',polizza:'—',agEmail:'',ass:'—',agenzia:'—',cf:'',iban:'',banca:''};
+  var fLive = DB.fornitori.find(function(x){ return x.id===fornIdLive; })||{nome:'—',email:'',t1:'',t2:'',t3:'',pec:''};
+  var pLive = persIdLive?(DB.persone.find(function(x){ return x.id===persIdLive; })||{nome:'',email:''}):{nome:'',email:''};
+  var c=tk?(DB.condomini.find(function(x){ return x.id===tk.condoId; })||cLive):cLive;
+  var f=tk?(DB.fornitori.find(function(x){ return x.id===tk.fornId; })||fLive):fLive;
+  var p=(tk&&tk.persId)?(DB.persone.find(function(x){ return x.id===tk.persId; })||pLive):pLive;
+  var pid=tk?tk.id:'BOZZA-'+new Date().getFullYear();
+  // Usa la descrizione dal form se tk non ha ancora dati
+  if(tk && !tk.descr) tk.descr = descrLive;
   var allSel=allegati.filter(function(a){ return a.sel; });
   var all=allSel.length>0?allSel.map(function(a){ return '- '+a.name; }).join('\n'):'(nessun allegato)';
   var allNote=allSel.length>0?'\n\nNota: allegati presenti ('+allSel.length+' file) — inviarli in risposta o via email separata.':'';
@@ -2207,18 +2217,18 @@ function apriEmail(tipo){
       'Richiesta preventivo - Prot. '+pid+' - '+c.nome :
       'Richiesta intervento - Prot. '+pid+' - '+c.nome;
     var b = isPrev ?
-      'Spett.le '+f.nome+',\n\ncon la presente si richiede la formulazione di un preventivo per i lavori da eseguire nel seguente condominio:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nCodice Fiscale: '+c.cf+'\nProtocollo: '+pid+'\n\nDescrizione lavori:\n'+(tk?tk.descr:'')+' \n\nSi prega di inviare il preventivo dettagliato a: '+replyTo+'\n\nDati per la fatturazione:\n'+c.nome+'\n'+studio.tit+'\n'+studio.ind+'\nCodice Fiscale '+c.cf+'\nTel. '+studio.tel+' - Codice SDI '+(studio.sdi||'JHBM40P')+'\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+firma :
-      'Spett.le '+f.nome+',\n\ncon la presente si richiede il seguente intervento di manutenzione:\n\nProtocollo: '+pid+'\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nCodice Fiscale: '+c.cf+'\n\nDescrizione intervento:\n'+(tk?tk.descr:'')+' \n'+(allSel.length>0?'\nAllegati:\n'+all+'\n':'')+'\nSi prega di citare il Protocollo sulla fattura.\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+'\n\nDati per la fatturazione:\n'+c.nome+'\n'+studio.tit+'\n'+studio.ind+'\nCodice Fiscale '+c.cf+'\nTel. '+studio.tel+' - Codice SDI '+(studio.sdi||'JHBM40P')+firma;
+      'Spett.le '+f.nome+',\n\ncon la presente si richiede la formulazione di un preventivo per i lavori da eseguire nel seguente condominio:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nProtocollo: '+pid+'\n\nDescrizione lavori:\n'+(tk&&tk.descr?tk.descr:descrLive)+' \n'+(allSel.length>0?'\nDocumentazione allegata:\n'+all+'\n':'')+'\nSi prega di inviare il preventivo dettagliato a: '+replyTo+'\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+firma :
+      'Spett.le '+f.nome+',\n\ncon la presente si richiede il seguente intervento di manutenzione:\n\nProtocollo: '+pid+'\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nCodice Fiscale: '+c.cf+'\n\nDescrizione intervento:\n'+(tk&&tk.descr?tk.descr:descrLive)+' \n'+(allSel.length>0?'\nDocumentazione allegata (da inviare separatamente):\n'+all+'\n':'')+'\nSi prega di citare il Protocollo sulla fattura.\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+'\n\nDati per la fatturazione:\n'+c.nome+'\n'+studio.tit+'\n'+studio.ind+'\nCodice Fiscale '+c.cf+'\nTel. '+studio.tel+' - Codice SDI '+(studio.sdi||'JHBM40P')+firma;
     html=buildEmailForm('eDest','eOgg','eCorpo',f.email,o,b,true,f.pec);
   } else if(tipo==='whatsapp'){
     tit='WhatsApp al fornitore';
     var isPrev2 = tk && tk.tipo==='Preventivo';
     var condoNomeWA = c.nome||'—';
     var condoIndWA = c.ind||'—';
-    var descrWA = tk ? tk.descr : '—';
+    var descrWA = (tk && tk.descr) ? tk.descr : (descrLive||'—');
     var wt = isPrev2 ?
-      '*STUDIO TADDEI — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nLavori richiesti:\n'+descrWA+(allSel&&allSel.length>0?'\n\n📎 Allegati ('+allSel.length+'):\n'+allSel.map(function(a){ return '- '+a.name; }).join('\n'):'')+'\n\nContattare lo studio per dettagli:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it') :
-      '*STUDIO TADDEI — Richiesta Intervento*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nIntervento richiesto:\n'+descrWA+(allSel&&allSel.length>0?'\n\n📎 Allegati ('+allSel.length+'):\n'+allSel.map(function(a){ return '- '+a.name; }).join('\n'):'')+'\n\nSi prega di intervenire e confermare disponibilità:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it');
+      '*STUDIO TADDEI — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nLavori richiesti:\n'+descrWA+(allSel.length>0?'\n\n📎 Documentazione allegata ('+allSel.length+' file):\n'+allSel.map(function(a){ return '- '+a.name; }).join('\n'):'')+'\n\nPer dettagli contattare lo studio:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it') :
+      '*STUDIO TADDEI — Richiesta Intervento*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nIntervento richiesto:\n'+descrWA+(allSel.length>0?'\n\n📎 Documentazione allegata ('+allSel.length+' file):\n'+allSel.map(function(a){ return '- '+a.name; }).join('\n'):'')+'\n\nSi prega di intervenire e confermare disponibilità:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it');
     // Costruisce selettore numeri dal fornitore
     var numeri = [];
     if(f.t1&&f.t1.trim()&&f.t1!=='-') numeri.push({label:'Tel 1: '+f.t1, val:f.t1});
