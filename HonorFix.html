@@ -280,6 +280,23 @@ tr.rs{background:#eff6ff!important;}
             <textarea id="noteSin" rows="2" style="padding-right:44px"></textarea>
             <button class="mic-btn" id="micSin" onclick="toggleMic('noteSin','micSin')" title="Detta">🎙</button>
           </div>
+          <div class="sec-hdr" style="margin-top:4px">Parti interessate / Soggetti danneggiati</div>
+          <select id="selDanneggiato" style="margin-bottom:6px" onchange="aggiungiDanneggiatoDaSelect(this.value)">
+            <option value="">+ Seleziona persona dall&apos;anagrafica...</option>
+          </select>
+          <div id="listaDanneggiati" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+          <div style="background:#f8f9fb;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">Oppure aggiungi danneggiato esterno:</div>
+            <div class="row">
+              <div class="col"><label>Nome / Denominazione</label><input type="text" id="danNome" placeholder="Nome Cognome o Ragione Sociale" style="margin-bottom:6px"></div>
+              <div class="col"><label>Telefono</label><input type="tel" id="danTel" placeholder="+39 ..." style="margin-bottom:6px"></div>
+            </div>
+            <div class="row">
+              <div class="col2"><label>Indirizzo</label><input type="text" id="danInd" placeholder="Via..." style="margin-bottom:6px"></div>
+              <div class="col"><label>Email</label><input type="email" id="danEmail" placeholder="email@..." style="margin-bottom:6px"></div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="aggiungiDanneggiato()">+ Aggiungi danneggiato esterno</button>
+          </div>
           <div style="background:#f3e8ff;border:1px solid #d8b4fe;border-radius:8px;padding:12px;margin-top:8px;margin-bottom:8px">
             <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:8px">Verifiche prima dell'invio all'assicurazione:</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
@@ -547,7 +564,11 @@ tr.rs{background:#eff6ff!important;}
         <div class="row"><div class="col2"><label>Nome Studio</label><input type="text" id="sNome" oninput="aggiornaPrev()"></div><div class="col"><label>Titolare</label><input type="text" id="sTit" oninput="aggiornaPrev()"></div></div>
         <div class="row"><div class="col"><label>Indirizzo</label><input type="text" id="sInd"></div><div class="col"><label>Telefono</label><input type="tel" id="sTel"></div><div class="col"><label>Cellulare</label><input type="tel" id="sCel"></div></div>
         <div class="row"><div class="col"><label>Email</label><input type="email" id="sEmail"></div><div class="col"><label>PEC</label><input type="email" id="sPEC"></div><div class="col"><label>P.IVA</label><input type="text" id="sPIVA"></div></div>
-        <div class="row"><div class="col"><label>Sito web</label><input type="text" id="sSito"></div><div class="col"><label>Iscrizione Albo</label><input type="text" id="sAlbo"></div></div>
+        <div class="row">
+          <div class="col"><label>Sito web</label><input type="text" id="sSito"></div>
+          <div class="col"><label>Codice SDI (fatturazione elettronica)</label><input type="text" id="sSDI" style="font-family:'DM Mono',monospace"></div>
+          <div class="col"><label>Orari</label><input type="text" id="sOrari"></div>
+        </div>
       </div>
       <div class="card">
         <div class="card-title">Logo</div>
@@ -1872,7 +1893,20 @@ var DB = {
 };
 var progDB = [];
 var progCnt = 1;
-var studio = {nome:"",tit:"",ind:"",tel:"",cel:"",email:"",pec:"",piva:"",sito:"",albo:"",logo:""};
+var studio = {
+  nome:"Studio Taddei Srl",
+  tit:"Rag. Lorenzo Taddei",
+  ind:"Via Mario De Bernardi 65, 50145 Firenze (FI)",
+  tel:"055 307408",
+  cel:"+39 320 345 8933",
+  email:"info@studiotaddei.it",
+  pec:"studiotaddei@outlook.it",
+  piva:"07181920484",
+  sdi:"JHBM40P",
+  sito:"www.studiotaddei.it",
+  orari:"Lun-Gio 9.30/13.00 - 15.00/18.00 | Ven 9.30/13.00",
+  logo:""
+};
 var editId = null;
 var selCId=null, selPId=null, selFId=null;
 var allegati = [];
@@ -1884,7 +1918,7 @@ window.onload = function(){
   ripopola();
   aggiornaBadge();
   controllaScadenze();
-  // Carica automaticamente da Google Sheets all'avvio
+  aggiornaHeader();
   gsCaricaTutto();
 };
 
@@ -1904,6 +1938,7 @@ function goPanel(nome, el){
   if(nome==='persone'){ renderPers(); setTimeout(initColPers,50); }
   if(nome==='fornitori'){ renderForn(); setTimeout(initColForn,50); }
   if(nome==='calendario'){ qs('calCondo').innerHTML='<option value="">Tutti</option>'+DB.condomini.map(function(c){ return '<option value="'+c.id+'">'+c.nome+'</option>'; }).join(''); renderCal(); }
+  if(nome==='impostazioni'){ precompilaImpostazioni(); }
 }
 
 // ── RIPOPOLA SELECT ──────────────────────────────────────────────────────────
@@ -1927,6 +1962,7 @@ function onCondo(id){
     '<span style="color:var(--purple)">🛡 <b>'+(c.ass||'—')+'</b> — Polizza: <b>'+(c.polizza||'—')+'</b></span>'+
     (c.iban?'<span>🏦 <b>'+(c.banca||'Banca')+'</b> — IBAN: <b>'+c.iban+'</b></span>':'');
   aggiornaSelPers(id);
+  if(qs('isSinistro') && qs('isSinistro').value==='Si') popolaSelDanneggiato();
 }
 
 function aggiornaSelPers(condoId){
@@ -1954,7 +1990,52 @@ function toggleSin(){
   var v = qs('isSinistro').value;
   qs('sinSec').style.display = v==='Si'?'block':'none';
   if(v==='Si'&&editId) qs('sinStudio').value=editId;
+  if(v==='Si') popolaSelDanneggiato();
   aggiornaInvioAss();
+}
+
+var danneggiati = [];
+
+function aggiungiDanneggiatoDaSelect(persId){
+  if(!persId) return;
+  var p = DB.persone.find(function(x){ return x.id===persId; });
+  if(!p) return;
+  if(danneggiati.find(function(d){ return d.id===persId; })){ toast('Persona già aggiunta.','warning'); return; }
+  danneggiati.push({ id:persId, nome:p.nome, ind:p.unita||'', tel:p.tel||'', email:p.email||'' });
+  qs('selDanneggiato').value='';
+  renderDanneggiati();
+}
+
+function aggiungiDanneggiato(){
+  var nome = qs('danNome').value.trim();
+  if(!nome){ toast('Inserisci almeno il nome.','error'); return; }
+  danneggiati.push({ id:'ext_'+Date.now(), nome:nome, ind:qs('danInd').value, tel:qs('danTel').value, email:qs('danEmail').value });
+  ['danNome','danInd','danTel','danEmail'].forEach(function(id){ qs(id).value=''; });
+  renderDanneggiati();
+}
+
+function renderDanneggiati(){
+  var el = qs('listaDanneggiati'); if(!el) return;
+  if(!danneggiati.length){ el.innerHTML=''; return; }
+  el.innerHTML = danneggiati.map(function(d,i){
+    return '<div style="display:flex;align-items:center;gap:8px;background:#f1f5f9;border-radius:6px;padding:7px 10px;font-size:12px">' +
+      '<span style="flex:1"><b>'+d.nome+'</b>'+(d.tel?' | '+d.tel:'')+(d.email?' | '+d.email:'')+(d.ind?' | '+d.ind:'')+'</span>' +
+      '<button class="fdel" onclick="danneggiati.splice('+i+',1);renderDanneggiati()">✕</button>' +
+      '</div>';
+  }).join('');
+  // Salva nel ticket corrente
+  if(editId){ var tk=DB.interventi.find(function(x){ return x.id===editId; }); if(tk) tk.danneggiati=danneggiati.slice(); }
+}
+
+function popolaSelDanneggiato(){
+  var sel = qs('selDanneggiato'); if(!sel) return;
+  var condoId = qs('selCondo').value;
+  var delCondo = DB.persone.filter(function(p){ var ids=p.condoIds||(p.condoId?[p.condoId]:[]); return ids.indexOf(condoId)>=0; });
+  var altri = DB.persone.filter(function(p){ var ids=p.condoIds||(p.condoId?[p.condoId]:[]); return ids.indexOf(condoId)<0; });
+  var o = '<option value="">+ Seleziona persona (anagrafica)...</option>';
+  if(delCondo.length){ o+='<optgroup label="Persone di questo condominio">'+delCondo.map(function(p){ return '<option value="'+p.id+'">'+p.nome+'</option>'; }).join('')+'</optgroup>'; }
+  if(altri.length){ o+='<optgroup label="Altre persone">'+altri.slice(0,100).map(function(p){ return '<option value="'+p.id+'">'+p.nome+'</option>'; }).join('')+'</optgroup>'; }
+  sel.innerHTML = o;
 }
 
 function aggiornaInvioAss(){
@@ -2103,19 +2184,22 @@ function apriEmail(tipo){
   if(tipo==='fornitore'){
     tit='Email al fornitore';
     var isPrev = tk && tk.tipo==='Preventivo';
-    var o = isPrev ? 'Richiesta preventivo — Pratica '+pid : 'Pratica '+pid+' — Intervento richiesto';
+    var replyTo = studio.email || 'info@studiotaddei.it';
+    var o = isPrev ?
+      'Richiesta preventivo - Prot. '+pid+' - '+c.nome :
+      'Richiesta intervento - Prot. '+pid+' - '+c.nome;
     var b = isPrev ?
-      'Spett.le '+f.nome+',\n\nla contattamo per richiedere un preventivo per i lavori presso:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nProtocollo: '+pid+'\nDescrizione lavori: '+(tk?tk.descr:'')+' \nData richiesta: '+(tk?tk.dataAp:'')+' \n\nSi richiede cortesemente di inviare un preventivo dettagliato entro i prossimi giorni lavorativi.\n\nAllegati: '+all+firma :
-      'Spett.le '+f.nome+',\n\nsi richiede intervento urgente presso:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nProtocollo: '+pid+'\nDescrizione: '+(tk?tk.descr:'')+' \nData apertura: '+(tk?tk.dataAp:'')+' \n\nSi prega di intervenire nel più breve tempo possibile e di contattare lo studio per confermare la disponibilità.\n\nAllegati: '+all+firma;
+      'Spett.le '+f.nome+',\n\ncon la presente si richiede la formulazione di un preventivo per i lavori da eseguire nel seguente condominio:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nCodice Fiscale: '+c.cf+'\nProtocollo: '+pid+'\n\nDescrizione lavori:\n'+(tk?tk.descr:'')+' \n\nSi prega di inviare il preventivo dettagliato a: '+replyTo+'\n\nDati per la fatturazione:\n'+c.nome+'\n'+studio.tit+'\n'+studio.ind+'\nCodice Fiscale '+c.cf+'\nTel. '+studio.tel+' - Codice SDI '+(studio.sdi||'JHBM40P')+'\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+firma :
+      'Spett.le '+f.nome+',\n\ncon la presente si richiede il seguente intervento di manutenzione:\n\nProtocollo: '+pid+'\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nCodice Fiscale: '+c.cf+'\n\nDescrizione intervento:\n'+(tk?tk.descr:'')+' \n\nSi prega di citare il Protocollo sulla fattura.\n\nNON RISPONDERE A QUESTA MAIL. Per info scrivere a: '+replyTo+'\n\nDati per la fatturazione:\n'+c.nome+'\n'+studio.tit+'\n'+studio.ind+'\nCodice Fiscale '+c.cf+'\nTel. '+studio.tel+' - Codice SDI '+(studio.sdi||'JHBM40P')+firma;
     html=buildEmailForm('eDest','eOgg','eCorpo',f.email,o,b,true,f.pec);
   } else if(tipo==='whatsapp'){
     tit='WhatsApp al fornitore';
     var isPrev2 = tk && tk.tipo==='Preventivo';
     var wt = isPrev2 ?
-      '*HonorFix — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nLavori: '+(tk?tk.descr:'')+' \nData: '+(tk?tk.dataAp:'')+' \n\nSi richiede preventivo. Contattare lo studio per dettagli.' :
-      '*HonorFix — Intervento Richiesto*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nProblema: '+(tk?tk.descr:'')+' \nData: '+(tk?tk.dataAp:'')+' \n\nSi prega di intervenire. Contattare lo studio per conferma.';
-    html='<label>Numero WhatsApp</label><input type="tel" id="wNum" value="'+f.t1+'" style="margin-bottom:12px"><label>Testo (modificabile)</label><textarea id="wTxt" rows="9">'+wt+'</textarea><div class="btn-grp" style="margin-top:8px"><button class="btn btn-success" onclick="inviaWA()">Apri WhatsApp</button><button class="btn btn-outline" onclick="chiudiModal('modalEmail')">Annulla</button></div>';
-  } else if(tipo==='conferma')} else if(tipo==='conferma'){
+      '*STUDIO TADDEI — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\n\nLavori richiesti:\n'+(tk?tk.descr:'')+' \n\nContattare lo studio per dettagli:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it') :
+      '*STUDIO TADDEI — Richiesta Intervento*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\n\nIntervento richiesto:\n'+(tk?tk.descr:'')+' \n\nSi prega di intervenire e confermare disponibilità:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it');
+    html='<label>Numero WhatsApp</label><input type="tel" id="wNum" value="'+f.t1+'" style="margin-bottom:12px"><label>Testo (modificabile)</label><textarea id="wTxt" rows="9">'+wt+'</textarea><div class="btn-grp" style="margin-top:8px"><button class="btn btn-success" onclick="inviaWA()">Apri WhatsApp</button><button class="btn btn-outline" onclick="chiudiModal(&quot;modalEmail&quot;)">Annulla</button></div>';
+  } else if(tipo==='conferma'){
     tit='Email conferma richiedente';
     var o2='Pratica '+pid+' — Richiesta presa in carico';
     var b2='Gentile '+(p.nome||'Condomino')+',\n\nla Sua richiesta è stata presa in carico (Prot. '+pid+').\n\nIntervento assegnato a: '+f.nome+'\nData apertura: '+(tk?tk.dataAp:'')+firma;
@@ -2124,8 +2208,30 @@ function apriEmail(tipo){
     tit='Email apertura sinistro';
     var sc=qs('sinComp')?qs('sinComp').value:'';
     var ns=qs('noteSin')?qs('noteSin').value:'';
-    var o3='Apertura sinistro — Polizza '+c.polizza+' — '+pid;
-    var b3='Spett.le Agenzia '+(c.agenzia||'—')+',\n\nsi comunica apertura sinistro:\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\nPolizza: '+c.polizza+'\nProtocollo: '+pid+'\nN. Sinistro compagnia: '+(sc||'da assegnare')+'\nDescrizione: '+(tk?tk.descr:'')+'\nNote: '+ns+'\n\nAllegati: '+all+firma;
+    var replyTo2 = studio.email||'info@studiotaddei.it';
+    var danTxt2='';
+    var danList2 = (tk && tk.danneggiati) ? tk.danneggiati : danneggiati;
+    if(danList2.length>0){
+      danTxt2='\nparti interessate:\n';
+      danList2.forEach(function(d){
+        danTxt2+=d.nome;
+        if(d.ind) danTxt2+='\n'+d.ind;
+        if(d.tel) danTxt2+='\n'+d.tel;
+        if(d.email) danTxt2+='\n'+d.email;
+        danTxt2+='\n\n';
+      });
+    }
+    var o3='Denuncia sinistro - Polizza '+c.polizza+' - ns. rif. '+(sc||pid)+' - '+c.nome;
+    var b3='Spett.le '+(c.agenzia||'Spettabile Agenzia')+','+
+      '\n\ncon la presente si denuncia il sinistro ns. rif. '+(sc||'da assegnare (da citare nelle future missive)')+' di cui si elenca:'+
+      '\n\ncondominio:\n'+c.nome+' - '+c.ind+' - Codice fiscale '+c.cf+
+      '\n\npolizza:\nn. '+c.polizza+
+      '\n\ndata sinistro:\n'+(tk?tk.dataAp:'')+
+      '\n\ndescrizione:\n'+(tk?tk.descr:'')+(ns?'\n'+ns:'')+
+      danTxt2+
+      '\nRiferimenti impresa intervenuta (fornitore):\n'+(f.nome||'- -')+' - '+(f.t1||'Telefono')+
+      '\n\nCoordinate bancarie condominio:\n'+c.nome+' - '+(c.banca||'')+' - '+(c.iban||'')+
+      firma;
     html=buildEmailForm('eDest','eOgg','eCorpo',c.agEmail,o3,b3,false,'');
   } else if(tipo==='perito'){
     tit='Documentazione al perito';
@@ -2378,9 +2484,24 @@ function controllaScadenze(){
 }
 
 // ── IMPOSTAZIONI ──────────────────────────────────────────────────────────────
-function aggiornaPrev(){ var n=qs('sNome').value||'Studio Amministrazioni'; var t=qs('sTit').value||'Amministratore'; qs('prevNomeStudio').textContent=n; qs('prevTitolare').textContent=t; qs('prevFirma').textContent=buildFirma({nome:qs('sNome').value,tit:qs('sTit').value,ind:qs('sInd').value,tel:qs('sTel').value,cel:qs('sCel').value,email:qs('sEmail').value,pec:qs('sPEC').value,piva:qs('sPIVA').value,sito:qs('sSito').value,albo:qs('sAlbo').value}); }
-function buildFirma(s){ if(!s.nome&&!s.tit) return 'Compila i dati per vedere la firma...'; var f='\n---\n'; if(s.tit) f+=s.tit+'\n'; if(s.nome) f+=s.nome+'\n'; if(s.ind) f+=s.ind+'\n'; if(s.tel||s.cel){ if(s.tel) f+='Tel: '+s.tel; if(s.cel) f+=(s.tel?' | Cell: ':'Cell: ')+s.cel; f+='\n'; } if(s.email) f+='Email: '+s.email+'\n'; if(s.pec) f+='PEC: '+s.pec+'\n'; if(s.piva) f+='P.IVA: '+s.piva+'\n'; if(s.sito) f+=s.sito+'\n'; if(s.albo) f+=s.albo+'\n'; return f; }
+function aggiornaPrev(){ var n=qs('sNome').value||'Studio Amministrazioni'; var t=qs('sTit').value||'Amministratore'; qs('prevNomeStudio').textContent=n; qs('prevTitolare').textContent=t; qs('prevFirma').textContent=buildFirma({nome:qs('sNome').value,tit:qs('sTit').value,ind:qs('sInd').value,tel:qs('sTel').value,cel:qs('sCel').value,email:qs('sEmail').value,pec:qs('sPEC').value,piva:qs('sPIVA').value,sito:qs('sSito').value,sdi:qs('sSDI').value,orari:qs('sOrari').value}); }
+function buildFirma(s){ if(!s.nome&&!s.tit) return 'Compila i dati per vedere la firma...'; var f='\n---\n'; if(s.tit) f+=s.tit+'\n'; if(s.nome) f+=s.nome+'\n'; if(s.ind) f+=s.ind+'\n'; if(s.tel||s.cel){ if(s.tel) f+='Tel: '+s.tel; if(s.cel) f+=(s.tel?' | WhatsApp: ':'WhatsApp: ')+s.cel; f+='\n'; } if(s.email) f+='Email: '+s.email+'\n'; if(s.pec) f+='PEC: '+s.pec+'\n'; if(s.piva) f+='P.IVA/C.F.: '+s.piva+'\n'; if(s.sdi) f+='Cod. SDI: '+s.sdi+'\n'; if(s.sito) f+=s.sito+'\n'; if(s.orari) f+='Orari: '+s.orari+'\n'; return f; }
 function salvaImp(){ studio.nome=qs('sNome').value; studio.tit=qs('sTit').value; studio.ind=qs('sInd').value; studio.tel=qs('sTel').value; studio.cel=qs('sCel').value; studio.email=qs('sEmail').value; studio.pec=qs('sPEC').value; studio.piva=qs('sPIVA').value; studio.sito=qs('sSito').value; studio.albo=qs('sAlbo').value; aggiornaHeader(); toast('Impostazioni salvate.','success'); }
+function precompilaImpostazioni(){
+  qs('sNome').value = studio.nome||'';
+  qs('sTit').value = studio.tit||'';
+  qs('sInd').value = studio.ind||'';
+  qs('sTel').value = studio.tel||'';
+  qs('sCel').value = studio.cel||'';
+  qs('sEmail').value = studio.email||'';
+  qs('sPEC').value = studio.pec||'';
+  qs('sPIVA').value = studio.piva||'';
+  qs('sSito').value = studio.sito||'';
+  qs('sSDI').value = studio.sdi||'';
+  qs('sOrari').value = studio.orari||'';
+  aggiornaPrev();
+}
+
 function aggiornaHeader(){ var txt=qs('logoTxt'); if(studio.nome) txt.textContent=studio.nome; else txt.innerHTML='Honor<span>Fix</span>'; if(studio.logo){ qs('logoImg').src=studio.logo; qs('logoImg').style.display='block'; qs('headerLogo').querySelector('.logo-svg').style.display='none'; } else { qs('logoImg').style.display='none'; qs('headerLogo').querySelector('.logo-svg').style.display=''; } qs('badgeStudio').textContent=studio.nome||'Studio Professionale'; }
 function caricaLogo(inp){ var f=inp.files[0]; if(!f) return; if(f.size>2097152){ toast('Logo troppo grande (max 2MB).','error'); return; } var r=new FileReader(); r.onload=function(e){ studio.logo=e.target.result; qs('logoPrevBox').innerHTML='<img src="'+e.target.result+'" style="max-width:80px;max-height:80px;object-fit:contain">'; qs('prevLogoBox').innerHTML='<img src="'+e.target.result+'" style="max-width:52px;max-height:52px;object-fit:contain">'; toast('Logo caricato.','success'); }; r.readAsDataURL(f); }
 function rimuoviLogo(){ studio.logo=''; qs('logoPrevBox').innerHTML='<span style="font-size:11px;color:var(--light);text-align:center">Nessun<br>logo</span>'; qs('prevLogoBox').innerHTML='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'; qs('logoImg').style.display='none'; qs('headerLogo').querySelector('.logo-svg').style.display=''; toast('Logo rimosso.','success'); }
