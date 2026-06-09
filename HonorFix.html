@@ -441,13 +441,14 @@ tr.rs{background:#eff6ff!important;}
       <div class="card">
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--muted)">Colonne visibili:</span>
-          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="email" onchange="aggiornaColonnePers()" checked> Email</label>
-          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="pec" onchange="aggiornaColonnePers()"> PEC</label>
           <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="tel" onchange="aggiornaColonnePers()" checked> Tel 1</label>
           <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="t2" onchange="aggiornaColonnePers()" checked> Tel 2</label>
           <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="t3" onchange="aggiornaColonnePers()" checked> Tel 3</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="email" onchange="aggiornaColonnePers()" checked> Email</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="pec" onchange="aggiornaColonnePers()"> PEC</label>
           <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="cf" onchange="aggiornaColonnePers()"> CF/P.IVA</label>
           <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colPers" value="unita" onchange="aggiornaColonnePers()"> Indirizzo</label>
+          <button class="btn btn-outline btn-sm" onclick="aggiornaColonnePers()">Aggiorna</button>
         </div>
         <div class="tw" style="margin-bottom:16px">
           <table><thead id="thPers"><tr><th>Nome</th><th>Condomini</th><th>Email</th><th>Tel 1</th><th>Tel 2</th><th>Tel 3</th><th>CF / P.IVA</th></tr></thead>
@@ -477,13 +478,14 @@ tr.rs{background:#eff6ff!important;}
       <div class="card">
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--muted)">Colonne visibili:</span>
-          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="ind" onchange="aggiornaColonneForn()"> Indirizzo</label>
-          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="email" onchange="aggiornaColonneForn()" checked> Email</label>
-          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="pec" onchange="aggiornaColonneForn()"> PEC</label>
           <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="t1" onchange="aggiornaColonneForn()" checked> Tel 1</label>
           <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="t2" onchange="aggiornaColonneForn()" checked> Tel 2</label>
           <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="t3" onchange="aggiornaColonneForn()" checked> Tel 3</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="email" onchange="aggiornaColonneForn()" checked> Email</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="pec" onchange="aggiornaColonneForn()"> PEC</label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="ind" onchange="aggiornaColonneForn()"> Indirizzo</label>
           <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer"><input type="checkbox" class="colForn" value="spec" onchange="aggiornaColonneForn()"> Specializzazione</label>
+          <button class="btn btn-outline btn-sm" onclick="aggiornaColonneForn()">Aggiorna</button>
         </div>
         <div class="tw" style="margin-bottom:16px">
           <table id="tableForn"><thead id="thForn"><tr><th>Ragione Sociale</th><th>Tipo</th><th>Email</th><th>Tel 1</th><th>Tel 2</th><th>Tel 3</th></tr></thead>
@@ -2275,13 +2277,16 @@ function apriWA(){ var num=qs('fT1').value.replace(/\s/g,''); if(!num){ toast('N
 function getColPers(){
   var saved = localStorage.getItem('honorfix_col_pers');
   if(saved) return JSON.parse(saved);
-  return ['email','tel','t2','t3'];
+  return ['tel','t2','t3','email'];
 }
 function aggiornaColonnePers(){
   var checked = [];
   document.querySelectorAll('.colPers').forEach(function(cb){ if(cb.checked) checked.push(cb.value); });
   localStorage.setItem('honorfix_col_pers', JSON.stringify(checked));
   renderPers();
+  // Scroll to top of table
+  var tw = document.querySelector('#panel-persone .tw');
+  if(tw) tw.scrollTop = 0;
 }
 function initColPers(){
   var saved = getColPers();
@@ -2292,13 +2297,15 @@ function initColPers(){
 function getColForn(){
   var saved = localStorage.getItem('honorfix_col_forn');
   if(saved) return JSON.parse(saved);
-  return ['email','t1','t2','t3'];
+  return ['t1','t2','t3','email'];
 }
 function aggiornaColonneForn(){
   var checked = [];
   document.querySelectorAll('.colForn').forEach(function(cb){ if(cb.checked) checked.push(cb.value); });
   localStorage.setItem('honorfix_col_forn', JSON.stringify(checked));
   renderForn();
+  var tw = document.querySelector('#panel-fornitori .tw');
+  if(tw) tw.scrollTop = 0;
 }
 function initColForn(){
   var saved = getColForn();
