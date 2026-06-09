@@ -1923,11 +1923,21 @@ var chFasce=null, chForn=null, chMens=null;
 // ── INIT ────────────────────────────────────────────────────────────────────
 window.onload = function(){
   document.getElementById('dataAp').value = oggi();
-  ripopola();
-  aggiornaBadge();
-  controllaScadenze();
-  aggiornaHeader();
-  gsCaricaTutto();
+  // 1. Carica SUBITO da localStorage (zero latenza, sempre disponibile)
+  try {
+    var bkInt = localStorage.getItem('HF_interventi');
+    if(bkInt){ var d=JSON.parse(bkInt); if(d&&d.length>0){ DB.interventi=d; } }
+    var bkProg = localStorage.getItem('HF_programmati');
+    if(bkProg){ var dp=JSON.parse(bkProg); if(dp&&dp.length>0){ progDB=dp; } }
+  } catch(e){}
+  ripopola(); aggiornaBadge(); controllaScadenze(); aggiornaHeader();
+  // 2. Sincronizza con Google Sheets in background (aggiorna se online e disponibile)
+  setTimeout(function(){ gsCaricaTutto(true); }, 1500);
+  // 3. Auto-sincronizzazione ogni 90 secondi (2 utenti vedono sempre dati aggiornati)
+  setInterval(function(){
+    // Ricarica solo se non c'è una pratica aperta in modifica
+    if(!editId) gsCaricaTutto(true);
+  }, 90000);
 };
 
 function oggi(){ return new Date().toISOString().split('T')[0]; }
@@ -2142,7 +2152,13 @@ function salvaPratica(){
     qs('cardChiusura').style.display='block';
     toast('Pratica creata: '+newId,'success');
   }
-  aggiornaBadge(); controllaScadenze(); setTimeout(gsSalvaTutto,500);
+  aggiornaBadge(); controllaScadenze();
+  // Salva PRIMA in localStorage (immediato, sicuro)
+  try {
+    localStorage.setItem('HF_interventi', JSON.stringify(DB.interventi));
+  } catch(e){}
+  // Poi sincronizza con Google Sheets in background
+  setTimeout(gsSalvaTutto, 300);
 }
 
 async function salvaSincronizza(){
@@ -2732,16 +2748,26 @@ async function gsSalvaTutto() {
       mode: 'no-cors',
       body: JSON.stringify(payload)
     });
+    // Aggiorna backup locale
+    try {
+      localStorage.setItem('HF_interventi', JSON.stringify(DB.interventi));
+      localStorage.setItem('HF_programmati', JSON.stringify(progDB));
+    } catch(e2){}
     toast('Salvato su Google Sheets!','success');
   } catch(e) {
-    toast('Errore salvataggio: '+e.message,'error');
+    // Anche se GSheets fallisce, i dati sono al sicuro in localStorage
+    try {
+      localStorage.setItem('HF_interventi', JSON.stringify(DB.interventi));
+      localStorage.setItem('HF_programmati', JSON.stringify(progDB));
+    } catch(e2){}
+    toast('Google Sheets non raggiungibile — dati salvati localmente','warning');
     console.error(e);
   }
 }
 
-async function gsCaricaTutto() {
+async function gsCaricaTutto(silent) {
   try {
-    toast('Caricamento da Google Sheets...','warning');
+    if(!silent) toast('Caricamento da Google Sheets...','warning');
 
     // Per il caricamento usiamo GET con parametro
     var resp = await fetch(APPS_SCRIPT_URL + '?action=load', {
@@ -2778,9 +2804,20 @@ async function gsCaricaTutto() {
     ripopola();
     aggiornaBadge();
     controllaScadenze();
-    toast('Dati caricati da Google Sheets!','success');
+    // Aggiorna backup locale con i dati freschi da Google Sheets
+    try {
+      localStorage.setItem('HF_interventi', JSON.stringify(DB.interventi));
+      localStorage.setItem('HF_programmati', JSON.stringify(progDB));
+    } catch(e2){}
+    if(!silent) toast('Dati caricati da Google Sheets!','success');
+    else toast('Sincronizzato con Google Sheets ✓','success');
   } catch(e) {
-    toast('Errore caricamento: '+e.message,'error');
+    // Prova a ripristinare dal backup locale
+    try {
+      var bk = localStorage.getItem('HF_interventi');
+      if(bk){ DB.interventi = JSON.parse(bk); ripopola(); aggiornaBadge(); }
+    } catch(e2){}
+    toast('Google Sheets non raggiungibile — dati locali ripristinati','warning');
     console.error(e);
   }
 }
