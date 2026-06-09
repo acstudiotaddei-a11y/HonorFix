@@ -2200,10 +2200,43 @@ function apriEmail(tipo){
   } else if(tipo==='whatsapp'){
     tit='WhatsApp al fornitore';
     var isPrev2 = tk && tk.tipo==='Preventivo';
+    var condoNomeWA = c.nome||'—';
+    var condoIndWA = c.ind||'—';
+    var descrWA = tk ? tk.descr : '—';
     var wt = isPrev2 ?
-      '*STUDIO TADDEI — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\n\nLavori richiesti:\n'+(tk?tk.descr:'')+' \n\nContattare lo studio per dettagli:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it') :
-      '*STUDIO TADDEI — Richiesta Intervento*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\n\nIntervento richiesto:\n'+(tk?tk.descr:'')+' \n\nSi prega di intervenire e confermare disponibilità:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it');
-    html='<label>Numero WhatsApp</label><input type="tel" id="wNum" value="'+f.t1+'" style="margin-bottom:12px"><label>Testo (modificabile)</label><textarea id="wTxt" rows="9">'+wt+'</textarea><div class="btn-grp" style="margin-top:8px"><button class="btn btn-success" onclick="inviaWA()">Apri WhatsApp</button><button class="btn btn-outline" onclick="chiudiModal(&quot;modalEmail&quot;)">Annulla</button></div>';
+      '*STUDIO TADDEI — Richiesta Preventivo*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nLavori richiesti:\n'+descrWA+'\n\nContattare lo studio per dettagli:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it') :
+      '*STUDIO TADDEI — Richiesta Intervento*\nProt. '+pid+'\n\nCondominio: '+condoNomeWA+'\nIndirizzo: '+condoIndWA+'\n\nIntervento richiesto:\n'+descrWA+'\n\nSi prega di intervenire e confermare disponibilità:\nTel: '+(studio.tel||'055 307408')+'\nEmail: '+(studio.email||'info@studiotaddei.it');
+    // Costruisce selettore numeri dal fornitore
+    var numeri = [];
+    if(f.t1&&f.t1.trim()&&f.t1!=='-') numeri.push({label:'Tel 1: '+f.t1, val:f.t1});
+    if(f.t2&&f.t2.trim()&&f.t2!=='-') numeri.push({label:'Tel 2: '+f.t2, val:f.t2});
+    if(f.t3&&f.t3.trim()&&f.t3!=='-') numeri.push({label:'Tel 3: '+f.t3, val:f.t3});
+    var numHTML = '';
+    if(numeri.length > 1){
+      // Più numeri - mostra selettore
+      numHTML = '<label>Seleziona numero WhatsApp</label>'+
+        '<select id="wNum" style="margin-bottom:12px">'+
+        numeri.map(function(n){ return '<option value="'+n.val+'">'+n.label+'</option>'; }).join('')+
+        '</select>';
+    } else if(numeri.length === 1){
+      // Un solo numero - pre-compilato
+      numHTML = '<label>Numero WhatsApp (da anagrafica fornitore)</label>'+
+        '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+        '<input type="tel" id="wNum" value="'+numeri[0].val+'" style="margin-bottom:0;flex:1">'+
+        '<span style="font-size:11px;color:var(--success);align-self:center">✓ '+f.nome+'</span>'+
+        '</div>';
+    } else {
+      // Nessun numero in anagrafica
+      numHTML = '<label>Numero WhatsApp <span style="color:var(--warning)">(non presente in anagrafica — inserisci manualmente)</span></label>'+
+        '<input type="tel" id="wNum" placeholder="+39 ..." style="margin-bottom:12px">';
+    }
+    html = numHTML+
+      '<label>Testo (modificabile)</label>'+
+      '<textarea id="wTxt" rows="10">'+wt+'</textarea>'+
+      '<div class="btn-grp" style="margin-top:8px">'+
+      '<button class="btn btn-success" onclick="inviaWA()">📱 Apri WhatsApp</button>'+
+      '<button class="btn btn-outline" onclick="chiudiModal(&quot;modalEmail&quot;)">Annulla</button>'+
+      '</div>';
   } else if(tipo==='conferma'){
     tit='Email conferma richiedente';
     var o2='Pratica '+pid+' — Richiesta presa in carico';
