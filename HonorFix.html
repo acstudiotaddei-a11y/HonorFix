@@ -2206,6 +2206,7 @@ function getFirma(){
 // ── EMAIL MODAL ───────────────────────────────────────────────────────────────
 function apriEmail(tipo){
   // ── Raccoglie dati dalla pratica o direttamente dal form ──────────────
+  function str(v){ return String(v||'').trim(); }
   var tk = editId ? DB.interventi.find(function(x){ return x.id===editId; }) : null;
   var condoId  = tk ? tk.condoId  : qs('selCondo').value;
   var fornId   = tk ? tk.fornId   : qs('selForn').value;
@@ -2274,9 +2275,10 @@ function apriEmail(tipo){
       : '*STUDIO TADDEI — Richiesta Intervento*\nProt. '+pid+'\n\nCondominio: '+c.nome+'\nIndirizzo: '+c.ind+'\n\nIntervento richiesto:\n'+descrV+allWA+'\n\nSi prega di intervenire e confermare disponibilità:\nTel: '+studio.tel+'\nEmail: '+studio.email;
     // Selettore numeri
     var numeri = [];
-    if(f.t1 && f.t1.trim() && f.t1 !== '-') numeri.push({label:'Tel 1: '+f.t1, val:f.t1});
-    if(f.t2 && f.t2.trim() && f.t2 !== '-') numeri.push({label:'Tel 2: '+f.t2, val:f.t2});
-    if(f.t3 && f.t3.trim() && f.t3 !== '-') numeri.push({label:'Tel 3: '+f.t3, val:f.t3});
+    var ft1=String(f.t1||'').trim(), ft2=String(f.t2||'').trim(), ft3=String(f.t3||'').trim();
+    if(ft1 && ft1 !== '-') numeri.push({label:'Tel 1: '+ft1, val:ft1});
+    if(ft2 && ft2 !== '-') numeri.push({label:'Tel 2: '+ft2, val:ft2});
+    if(ft3 && ft3 !== '-') numeri.push({label:'Tel 3: '+ft3, val:ft3});
     var numHTML = '';
     if(numeri.length > 1){
       numHTML = '<label>Seleziona numero WhatsApp</label><select id="wNum" style="margin-bottom:12px">'
