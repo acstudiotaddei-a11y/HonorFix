@@ -2117,12 +2117,26 @@ function onAssicurazione(nomeAss){
 
 // ── ALLEGATI ─────────────────────────────────────────────────────────────────
 function addFiles(inp){
-  for(var i=0;i<inp.files.length;i++) allegati.push({name:inp.files[i].name,size:inp.files[i].size,sel:true});
-  renderFiles(); inp.value='';
+  var files = Array.from(inp.files);
+  files.forEach(function(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      allegati.push({name:file.name, size:file.size, sel:true, data:e.target.result, type:file.type});
+      renderFiles();
+    };
+    reader.readAsDataURL(file);
+  });
+  inp.value='';
 }
 function renderFiles(){
   qs('fileList').innerHTML = allegati.map(function(f,i){
-    return '<div class="fi"><input type="checkbox"'+(f.sel?' checked':'')+'onchange="allegati['+i+'].sel=this.checked"><span class="fn">'+f.name+'</span><span class="fs">'+(f.size/1024).toFixed(0)+' KB</span><button class="fd" onclick="allegati.splice('+i+',1);renderFiles()">✕</button></div>';
+    var prev = '';
+    if(f.data && f.type && f.type.startsWith('image/')){
+      prev = '<img src="'+f.data+'" style="height:36px;width:36px;object-fit:cover;border-radius:4px;flex-shrink:0">';
+    } else if(f.data) {
+      prev = '<span style="font-size:18px;flex-shrink:0">📄</span>';
+    }
+    return '<div class="fi"><input type="checkbox"'+(f.sel?' checked':'')+'onchange="allegati['+i+'].sel=this.checked">'+prev+'<span class="fn">'+f.name+'</span><span class="fs">'+(f.size/1024).toFixed(0)+' KB</span><button class="fd" onclick="allegati.splice('+i+',1);renderFiles()">✕</button></div>';
   }).join('');
 }
 
@@ -2308,7 +2322,29 @@ function apriEmail(tipo){
 
 function buildEmailForm(iD,iO,iC,dest,ogg,corpo,showPec,pec){
   var extra=showPec&&pec&&pec!=='-'?'<button class="btn btn-outline btn-sm" style="margin:4px 0 8px" onclick="qs(\''+iD+'\').value=\''+pec+'\';toast(\'Indirizzo cambiato in PEC\',\'success\')">Usa PEC: '+pec+'</button>':'';
-  return '<label>A:</label><input type="email" id="'+iD+'" value="'+dest+'" style="margin-bottom:4px">'+extra+'<label style="margin-top:4px">Oggetto:</label><input type="text" id="'+iO+'" value="'+ogg.replace(/"/g,'&quot;')+'" style="margin-bottom:12px"><label>Testo (modificabile):</label><textarea id="'+iC+'" rows="13">'+corpo+'</textarea><div class="btn-grp" style="margin-top:8px"><button class="btn btn-primary" onclick="inviaEmail()">Apri nel client email</button><button class="btn btn-outline" onclick="chiudiModal(\'modalEmail\')">Annulla</button></div>';
+  // Allegati con anteprima e download
+  var allSel = allegati.filter(function(a){ return a.sel && a.data; });
+  var allHTML = '';
+  if(allSel.length > 0){
+    allHTML = '<div style="margin:8px 0 12px;padding:10px 12px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px">'
+      + '<div style="font-size:11px;font-weight:600;color:#1e40af;margin-bottom:8px">📎 ALLEGATI DA INVIARE ('+allSel.length+' file)</div>'
+      + allSel.map(function(a){
+          var isImg = a.type && a.type.startsWith('image/');
+          var prev = isImg ? '<img src="'+a.data+'" style="height:40px;width:40px;object-fit:cover;border-radius:4px;margin-right:8px;vertical-align:middle">' : '<span style="font-size:20px;margin-right:8px">📄</span>';
+          return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+            + prev
+            + '<span style="font-size:12px;flex:1">'+a.name+'</span>'
+            + '<a href="'+a.data+'" download="'+a.name+'" class="btn btn-success btn-xs" style="text-decoration:none">⬇ Scarica</a>'
+            + '</div>';
+        }).join('')
+      + '<div style="font-size:11px;color:#64748b;margin-top:6px">⚠️ Scarica i file e allegali manualmente prima di inviare la email</div>'
+      + '</div>';
+  }
+  return '<label>A:</label><input type="email" id="'+iD+'" value="'+dest+'" style="margin-bottom:4px">'+extra+'<label style="margin-top:4px">Oggetto:</label><input type="text" id="'+iO+'" value="'+ogg.replace(/"/g,'&quot;')+'" style="margin-bottom:12px"><label>Testo (modificabile):</label><textarea id="'+iC+'" rows="10">'+corpo+'</textarea>'+allHTML+'<div class="btn-grp" style="margin-top:8px">'+
+      '<button class="btn btn-success" onclick="inviaEmailConGS()">📧 Invia con Gmail</button>'+
+      '<button class="btn btn-outline" onclick="inviaEmail()">Apri client email</button>'+
+      '<button class="btn btn-outline" onclick="chiudiModal(\'modalEmail\')">Annulla</button>'+
+      '</div>';
 }
 
 function inviaEmail(){
@@ -2316,6 +2352,34 @@ function inviaEmail(){
   if(!dest||!dest.includes('@')){ toast('Email non valida!','error'); return; }
   window.open('mailto:'+dest+'?subject='+encodeURIComponent(ogg)+'&body='+encodeURIComponent(corpo));
   chiudiModal('modalEmail');
+}
+
+async function inviaEmailConGS(){
+  var dest  = qs('eDest') ? qs('eDest').value : (qs('eDest2') ? qs('eDest2').value : (qs('eDest3') ? qs('eDest3').value : qs('eDest4').value));
+  var ogg   = qs('eOgg')  ? qs('eOgg').value  : (qs('eOgg2')  ? qs('eOgg2').value  : (qs('eOgg3')  ? qs('eOgg3').value  : qs('eOgg4').value));
+  var corpo = qs('eCorpo')? qs('eCorpo').value : (qs('eCorpo2')? qs('eCorpo2').value: (qs('eCorpo3')? qs('eCorpo3').value: qs('eCorpo4').value));
+  
+  if(!dest||!dest.includes('@')){ toast('Email destinatario non valida!','error'); return; }
+  
+  toast('Invio in corso...','warning');
+  
+  // Se ci sono allegati con dati base64, prima li carica su Drive (se c'è pratica)
+  var allSel = allegati.filter(function(a){ return a.sel && a.data; });
+  var fileIds = [];
+  
+  if(allSel.length > 0 && editId) {
+    toast('Caricamento allegati su Drive...','warning');
+    for(var i=0; i<allSel.length; i++) {
+      var result = await uploadFileSuDrive(editId, allSel[i]);
+      if(result && result.fileId) {
+        // Salva il fileId nell'allegato per usi futuri
+        allSel[i].fileId = result.fileId;
+        fileIds.push({fileId: result.fileId, fileName: allSel[i].name});
+      }
+    }
+  }
+  
+  await inviaEmailGS(dest, ogg, corpo, editId, fileIds);
 }
 
 function inviaWA(){
@@ -2690,7 +2754,7 @@ document.addEventListener('click',function(e){ if(!e.target.closest('.search-wra
 function esportaCSV(){ var h=['Protocollo','Tipo','Urgente','Sinistro','N.SinCompagnia','Condominio','Polizza','Banca','Richiedente','Fornitore','Apertura','Chiusura','Stato','Note chiusura']; var rows=DB.interventi.map(function(x){ var c=DB.condomini.find(function(d){ return d.id===x.condoId; })||{nome:'',polizza:'',banca:''}; var f=(DB.fornitori.find(function(d){ return d.id===x.fornId; })||{nome:''}).nome; var p=x.persId?(DB.persone.find(function(d){ return d.id===x.persId; })||{nome:''}).nome:''; return [x.id,x.tipo,x.urgente?'SI':'NO',x.sin,x.sinComp||'',c.nome,c.polizza||'',c.banca||'',p,f,x.dataAp,x.dataCh,x.stato,x.noteCh||''].map(function(v){ return '"'+v+'"'; }).join(';'); }); var csv='\uFEFF'+[h.join(';')].concat(rows).join('\n'); var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})); a.download='HonorFix_'+oggi()+'.csv'; a.click(); }
 
 // ── GOOGLE APPS SCRIPT INTEGRATION ─────────────────────────────────────────
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-6jZp5gJYr28CfIBLu7L8Mj_vWkcIBQjxvaWD41annQNETstXlnd3D1MZMqyUMC-J/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2g9uGI9LuLZjBCZtE-6VUuHp6Z8zx3By6XW2NGcXJdcVV8neBLn1qV6lr4goQDbZv/exec';
 
 function obj2rows(arr, fields) {
   var rows = [fields];
@@ -2718,10 +2782,11 @@ var FIELDS = {
   Programmati:['id','descr','condoId','fornId','data','ric','note']
 };
 
+var GS_URL = "https://script.google.com/macros/s/AKfycby2g9uGI9LuLZjBCZtE-6VUuHp6Z8zx3By6XW2NGcXJdcVV8neBLn1qV6lr4goQDbZv/exec";
+
+// ── SALVATAGGIO SU GOOGLE SHEETS ─────────────────────────────────────────────
 async function gsSalvaTutto() {
   try {
-    toast('Salvataggio su Google Sheets...','warning');
-
     var personeCopy = DB.persone.map(function(p) {
       var pc = Object.assign({},p);
       if(Array.isArray(pc.condoIds)) pc.condoIds = JSON.stringify(pc.condoIds);
@@ -2745,82 +2810,151 @@ async function gsSalvaTutto() {
       }
     };
 
-    await fetch(APPS_SCRIPT_URL, {
+    await fetch(GS_URL, {
       method: 'POST',
       mode: 'no-cors',
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
     });
-    // Aggiorna backup locale
+
     try {
       localStorage.setItem('HF_interventi', JSON.stringify(DB.interventi));
       localStorage.setItem('HF_programmati', JSON.stringify(progDB));
     } catch(e2){}
     toast('Salvato su Google Sheets!','success');
   } catch(e) {
-    // Anche se GSheets fallisce, i dati sono al sicuro in localStorage
     try {
       localStorage.setItem('HF_interventi', JSON.stringify(DB.interventi));
       localStorage.setItem('HF_programmati', JSON.stringify(progDB));
     } catch(e2){}
     toast('Google Sheets non raggiungibile — dati salvati localmente','warning');
-    console.error(e);
   }
 }
 
+// ── CARICAMENTO DA GOOGLE SHEETS ─────────────────────────────────────────────
 async function gsCaricaTutto(silent) {
   try {
     if(!silent) toast('Caricamento da Google Sheets...','warning');
-
-    // Per il caricamento usiamo GET con parametro
-    var resp = await fetch(APPS_SCRIPT_URL + '?action=load', {
-      method: 'GET',
-      mode: 'cors'
-    });
-    var result = await resp.json();
-    if(result.status !== 'ok') throw new Error(result.message || 'Errore caricamento');
-
-    var d = result.data;
-
-    if(d.Condomini && d.Condomini.length > 1) DB.condomini = rows2obj(d.Condomini);
-    if(d.Fornitori && d.Fornitori.length > 1) DB.fornitori = rows2obj(d.Fornitori);
-    if(d.Persone && d.Persone.length > 1) {
-      DB.persone = rows2obj(d.Persone).map(function(p) {
-        try { if(p.condoIds) p.condoIds = JSON.parse(p.condoIds); } catch(e){ p.condoIds=[]; }
-        return p;
-      });
+    var resp = await fetch(GS_URL + '?action=load', {method:'GET', mode:'cors'});
+    var json = await resp.json();
+    if(json.status === 'ok' && json.data) {
+      var d = json.data;
+      if(d.Condomini   && d.Condomini.length   > 1) DB.condomini   = rows2obj(d.Condomini,   FIELDS.Condomini);
+      if(d.Persone     && d.Persone.length     > 1) DB.persone     = rows2obj(d.Persone,     FIELDS.Persone);
+      if(d.Fornitori   && d.Fornitori.length   > 1) DB.fornitori   = rows2obj(d.Fornitori,   FIELDS.Fornitori);
+      if(d.Interventi  && d.Interventi.length  > 1) {
+        DB.interventi = rows2obj(d.Interventi, FIELDS.Interventi);
+        DB.interventi.forEach(function(x){
+          x.urgente = x.urgente==='true'||x.urgente===true;
+          if(typeof x.all === 'string'){ try{ x.all=JSON.parse(x.all); }catch(e){ x.all=[]; } }
+          if(!Array.isArray(x.all)) x.all=[];
+        });
+        var maxN = 0;
+        DB.interventi.forEach(function(x){
+          var m = x.id ? x.id.match(/-(\d+)$/) : null;
+          if(m) maxN = Math.max(maxN, parseInt(m[1]));
+        });
+        if(maxN > DB._cnt) DB._cnt = maxN;
+      }
+      if(d.Programmati && d.Programmati.length > 1) progDB = rows2obj(d.Programmati, FIELDS.Programmati);
+      try {
+        localStorage.setItem('HF_interventi', JSON.stringify(DB.interventi));
+        localStorage.setItem('HF_programmati', JSON.stringify(progDB));
+      } catch(e2){}
+      ripopola(); aggiornaBadge(); controllaScadenze(); aggiornaHeader();
+      if(!silent) toast('Dati caricati da Google Sheets!','success');
+      else toast('Sincronizzato ✓','success');
     }
-    if(d.Interventi && d.Interventi.length > 1) {
-      DB.interventi = rows2obj(d.Interventi).map(function(x) {
-        x.urgente = x.urgente === 'true';
-        try { if(x.all) x.all = JSON.parse(x.all); } catch(e){ x.all=[]; }
-        var num = parseInt(x.id.split('-').pop());
-        if(!isNaN(num) && num > DB._cnt) DB._cnt = num;
-        return x;
-      });
-    }
-    if(d.Programmati && d.Programmati.length > 1) {
-      progDB = rows2obj(d.Programmati);
-      progCnt = progDB.length + 1;
-    }
-
-    ripopola();
-    aggiornaBadge();
-    controllaScadenze();
-    // Aggiorna backup locale con i dati freschi da Google Sheets
-    try {
-      localStorage.setItem('HF_interventi', JSON.stringify(DB.interventi));
-      localStorage.setItem('HF_programmati', JSON.stringify(progDB));
-    } catch(e2){}
-    if(!silent) toast('Dati caricati da Google Sheets!','success');
-    else toast('Sincronizzato con Google Sheets ✓','success');
   } catch(e) {
-    // Prova a ripristinare dal backup locale
     try {
       var bk = localStorage.getItem('HF_interventi');
       if(bk){ DB.interventi = JSON.parse(bk); ripopola(); aggiornaBadge(); }
     } catch(e2){}
-    toast('Google Sheets non raggiungibile — dati locali ripristinati','warning');
-    console.error(e);
+    if(!silent) toast('Google Sheets non raggiungibile — dati locali ripristinati','warning');
+  }
+}
+
+// ── UPLOAD FILE SU GOOGLE DRIVE ───────────────────────────────────────────────
+async function uploadFileSuDrive(praticaId, allegato) {
+  // allegato = {name, data (base64), type, size}
+  try {
+    var payload = {
+      action: 'uploadFile',
+      praticaId: praticaId,
+      fileName: allegato.name,
+      fileData: allegato.data,
+      fileType: allegato.type || 'application/octet-stream'
+    };
+    var resp = await fetch(GS_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    var json = await resp.json();
+    if(json.status === 'ok') {
+      return json.data; // {fileId, fileUrl, fileName}
+    }
+    return null;
+  } catch(e) {
+    console.error('Upload Drive error:', e);
+    return null;
+  }
+}
+
+// ── INVIO EMAIL TRAMITE APPS SCRIPT ──────────────────────────────────────────
+async function inviaEmailGS(to, subject, body, praticaId, fileIds) {
+  // fileIds = [{fileId, fileName}] già su Drive
+  // Se non ci sono fileId, invia allegati base64 direttamente
+  var allSel = allegati.filter(function(a){ return a.sel; });
+  
+  try {
+    var payload = {
+      action: 'sendEmail',
+      to: to,
+      subject: subject,
+      body: body,
+      praticaId: praticaId || '',
+      allegati: fileIds || [],
+      allegatiBase64: allSel.filter(function(a){ return a.data && !a.fileId; }).map(function(a){
+        return {name: a.name, data: a.data, type: a.type || 'application/octet-stream'};
+      })
+    };
+
+    var resp = await fetch(GS_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    var json = await resp.json();
+    if(json.status === 'ok') {
+      toast('Email inviata con ' + (json.data.attachments||0) + ' allegati!', 'success');
+      chiudiModal('modalEmail');
+      return true;
+    } else {
+      toast('Errore invio: ' + (json.message||'sconosciuto'), 'error');
+      return false;
+    }
+  } catch(e) {
+    toast('Errore connessione Apps Script: ' + e.message, 'error');
+    return false;
+  }
+}
+
+// ── CARICA FILE PRATICA DA DRIVE ─────────────────────────────────────────────
+async function caricaFilesDrive(praticaId) {
+  try {
+    var resp = await fetch(GS_URL + '?action=getFiles&praticaId=' + praticaId, {
+      method: 'GET', mode: 'cors'
+    });
+    var json = await resp.json();
+    if(json.status === 'ok' && json.data.files) {
+      return json.data.files; // [{id, name, url, type}]
+    }
+    return [];
+  } catch(e) {
+    return [];
   }
 }
 
