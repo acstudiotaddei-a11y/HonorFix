@@ -1930,6 +1930,21 @@ window.onload = function(){
     var bkProg = localStorage.getItem('HF_programmati');
     if(bkProg){ var dp=JSON.parse(bkProg); if(dp&&dp.length>0){ progDB=dp; } }
   } catch(e){}
+  // Carica impostazioni studio da localStorage
+  try {
+    var bkStudio = localStorage.getItem('HF_studio');
+    if(bkStudio){ studio = JSON.parse(bkStudio); }
+    if(!studio.nome){
+      studio = {
+        nome:'Studio Taddei Srl', tit:'Rag. Lorenzo Taddei',
+        ind:'Via Mario De Bernardi 65, 50145 Firenze (FI)',
+        tel:'055 307408', cel:'+39 320 345 8933',
+        email:'info@studiotaddei.it', pec:'studiotaddei@outlook.it',
+        piva:'07181920484', sdi:'JHBM40P',
+        sito:'www.studiotaddei.it', logo:''
+      };
+    }
+  } catch(e2){}
   ripopola(); aggiornaBadge(); controllaScadenze(); aggiornaHeader();
   // 2. Sincronizza con Google Sheets in background (aggiorna se online e disponibile)
   setTimeout(function(){ gsCaricaTutto(true); }, 1500);
@@ -2459,10 +2474,11 @@ function renderReg(){
     var forn=(DB.fornitori.find(function(f){ return f.id===x.fornId; })||{nome:'—'}).nome;
     var bT=x.sin==='Si'?'<span class="badge b-sin">Sinistro</span>':'<span class="badge b-int">'+x.tipo+'</span>';
     var bU=x.urgente?' <span class="badge b-urg">🚨 Urgente</span>':'';
+    var bAll=(x.all&&x.all.length>0)?' <span class="badge" style="background:#fef3c7;color:#92400e" title="'+x.all.length+' allegato/i">📎 '+x.all.length+'</span>':'';
     var bS=x.stato==='Aperto'?'<span class="badge b-open">Aperto</span>':'<span class="badge b-closed">Chiuso</span>';
     var bCh=x.stato==='Aperto'?'<button class="btn btn-success btn-xs" onclick="chiudiDaReg(\''+x.id+'\')">Chiudi</button>':'';
     var bRi=x.stato==='Chiuso'?'<button class="btn btn-outline btn-xs" onclick="riapri(\''+x.id+'\')">Riapri</button>':'';
-    return '<tr><td><code style="font-family:\'DM Mono\',monospace;font-size:11px">'+x.id+'</code>'+bU+'</td><td>'+bT+'</td><td>'+condo+'</td><td>'+pers+'</td><td>'+forn+'</td><td>'+(x.dataAp||'—')+'</td><td>'+(x.dataCh||'—')+'</td><td>'+bS+'</td><td class="act"><button class="btn btn-outline btn-xs" onclick="modificaDaReg(\''+x.id+'\')">Modifica</button>'+bCh+bRi+'<button class="btn btn-danger btn-xs" onclick="eliminaInt(\''+x.id+'\')">Elimina</button></td></tr>';
+    return '<tr><td><code style="font-family:\'DM Mono\',monospace;font-size:11px">'+x.id+'</code>'+bU+bAll+'</td><td>'+bT+'</td><td>'+condo+'</td><td>'+pers+'</td><td>'+forn+'</td><td>'+(x.dataAp||'—')+'</td><td>'+(x.dataCh||'—')+'</td><td>'+bS+'</td><td class="act"><button class="btn btn-outline btn-xs" onclick="modificaDaReg(\''+x.id+'\')">Modifica</button>'+bCh+bRi+'<button class="btn btn-danger btn-xs" onclick="eliminaInt(\''+x.id+'\')">Elimina</button></td></tr>';
   }).join('');
 }
 
@@ -2649,7 +2665,7 @@ function controllaScadenze(){
 // ── IMPOSTAZIONI ──────────────────────────────────────────────────────────────
 function aggiornaPrev(){ var n=qs('sNome').value||'Studio Amministrazioni'; var t=qs('sTit').value||'Amministratore'; qs('prevNomeStudio').textContent=n; qs('prevTitolare').textContent=t; qs('prevFirma').textContent=buildFirma({nome:qs('sNome').value,tit:qs('sTit').value,ind:qs('sInd').value,tel:qs('sTel').value,cel:qs('sCel').value,email:qs('sEmail').value,pec:qs('sPEC').value,piva:qs('sPIVA').value,sito:qs('sSito').value,sdi:qs('sSDI').value,orari:qs('sOrari').value}); }
 function buildFirma(s){ if(!s.nome&&!s.tit) return 'Compila i dati per vedere la firma...'; var f='\n---\n'; if(s.tit) f+=s.tit+'\n'; if(s.nome) f+=s.nome+'\n'; if(s.ind) f+=s.ind+'\n'; if(s.tel||s.cel){ if(s.tel) f+='Tel: '+s.tel; if(s.cel) f+=(s.tel?' | WhatsApp: ':'WhatsApp: ')+s.cel; f+='\n'; } if(s.email) f+='Email: '+s.email+'\n'; if(s.pec) f+='PEC: '+s.pec+'\n'; if(s.piva) f+='P.IVA/C.F.: '+s.piva+'\n'; if(s.sdi) f+='Cod. SDI: '+s.sdi+'\n'; if(s.sito) f+=s.sito+'\n'; if(s.orari) f+='Orari: '+s.orari+'\n'; return f; }
-function salvaImp(){ studio.nome=qs('sNome').value; studio.tit=qs('sTit').value; studio.ind=qs('sInd').value; studio.tel=qs('sTel').value; studio.cel=qs('sCel').value; studio.email=qs('sEmail').value; studio.pec=qs('sPEC').value; studio.piva=qs('sPIVA').value; studio.sito=qs('sSito').value; studio.albo=qs('sAlbo').value; aggiornaHeader(); toast('Impostazioni salvate.','success'); }
+function salvaImp(){ studio.nome=qs('sNome').value; studio.tit=qs('sTit').value; studio.ind=qs('sInd').value; studio.tel=qs('sTel').value; studio.cel=qs('sCel').value; studio.email=qs('sEmail').value; studio.pec=qs('sPEC').value; studio.piva=qs('sPIVA').value; studio.sito=qs('sSito').value; studio.albo=qs('sAlbo').value; aggiornaHeader(); try{ localStorage.setItem('HF_studio', JSON.stringify(studio)); }catch(e){} toast('Impostazioni salvate.','success'); }
 function precompilaImpostazioni(){
   qs('sNome').value = studio.nome||'';
   qs('sTit').value = studio.tit||'';
@@ -2665,7 +2681,21 @@ function precompilaImpostazioni(){
   aggiornaPrev();
 }
 
-function aggiornaHeader(){ var txt=qs('logoTxt'); if(studio.nome) txt.textContent=studio.nome; else txt.innerHTML='Honor<span>Fix</span>'; if(studio.logo){ qs('logoImg').src=studio.logo; qs('logoImg').style.display='block'; qs('headerLogo').querySelector('.logo-svg').style.display='none'; } else { qs('logoImg').style.display='none'; qs('headerLogo').querySelector('.logo-svg').style.display=''; } qs('badgeStudio').textContent=studio.nome||'Studio Professionale'; }
+function aggiornaHeader(){
+  try {
+    var txt=qs('logoTxt');
+    if(txt){ if(studio.nome) txt.textContent=studio.nome; else txt.innerHTML='Honor<span>Fix</span>'; }
+    var logoImg=qs('logoImg'), logoSvg=qs('headerLogo')?qs('headerLogo').querySelector('.logo-svg'):null;
+    if(studio.logo && logoImg){
+      logoImg.src=studio.logo; logoImg.style.display='block';
+      if(logoSvg) logoSvg.style.display='none';
+    } else if(logoImg){
+      logoImg.style.display='none';
+      if(logoSvg) logoSvg.style.display='';
+    }
+    var bs=qs('badgeStudio'); if(bs) bs.textContent=studio.nome||'Studio Professionale';
+  } catch(e){ console.warn('aggiornaHeader:', e); }
+}
 function caricaLogo(inp){ var f=inp.files[0]; if(!f) return; if(f.size>2097152){ toast('Logo troppo grande (max 2MB).','error'); return; } var r=new FileReader(); r.onload=function(e){ studio.logo=e.target.result; qs('logoPrevBox').innerHTML='<img src="'+e.target.result+'" style="max-width:80px;max-height:80px;object-fit:contain">'; qs('prevLogoBox').innerHTML='<img src="'+e.target.result+'" style="max-width:52px;max-height:52px;object-fit:contain">'; toast('Logo caricato.','success'); }; r.readAsDataURL(f); }
 function rimuoviLogo(){ studio.logo=''; qs('logoPrevBox').innerHTML='<span style="font-size:11px;color:var(--light);text-align:center">Nessun<br>logo</span>'; qs('prevLogoBox').innerHTML='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'; qs('logoImg').style.display='none'; qs('headerLogo').querySelector('.logo-svg').style.display=''; toast('Logo rimosso.','success'); }
 
