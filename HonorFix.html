@@ -630,7 +630,7 @@ tr.rs{background:#eff6ff!important;}
 </div>
 
 <div class="toast-wrap" id="toastWrap"></div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <script>
 // ── DATI REALI (iniettati da file) ──────────────────────────────────────────
 var DB = {
@@ -1918,7 +1918,7 @@ var studio = {
 var editId = null;
 var selCId=null, selPId=null, selFId=null;
 var allegati = [];
-var chFasce=null, chForn=null, chMens=null;
+
 
 // ── INIT ────────────────────────────────────────────────────────────────────
 window.onload = function(){
@@ -2609,21 +2609,18 @@ function renderStat(){
   var cf=[0,0,0,0,0]; chiusi.forEach(function(x){ var gg=Math.floor((new Date(x.dataCh)-new Date(x.dataAp))/86400000); if(gg===0)cf[0]++;else if(gg<=3)cf[1]++;else if(gg<=7)cf[2]++;else if(gg<=15)cf[3]++;else cf[4]++; });
   var lbs=['Stesso giorno','Entro 3gg','Entro 7gg','Entro 15gg','Oltre 15gg']; var tot=chiusi.length||1;
   qs('tabFasce').innerHTML=lbs.map(function(l,i){ return '<tr><td>'+l+'</td><td>'+cf[i]+'</td><td>'+((cf[i]/tot)*100).toFixed(1)+'%</td></tr>'; }).join('');
-  if(chFasce) chFasce.destroy();
-  chFasce=new Chart(qs('chFasce').getContext('2d'),{type:'doughnut',data:{labels:lbs,datasets:[{data:cf,backgroundColor:['#27ae60','#2980b9','#f39c12','#e67e22','#e74c3c'],borderWidth:0}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}},cutout:'55%'}});
+  disegnaDonut(qs('chFasce'), lbs, cf, ['#27ae60','#2980b9','#f39c12','#e67e22','#e74c3c']);
   var mF={}; chiusi.forEach(function(x){ var fn=(DB.fornitori.find(function(f){ return f.id===x.fornId; })||{nome:'—'}).nome; if(!mF[fn]) mF[fn]={count:0,tot:0}; mF[fn].count++; mF[fn].tot+=Math.max(0,Math.floor((new Date(x.dataCh)-new Date(x.dataAp))/86400000)); });
   var fr=Object.keys(mF).map(function(n){ return {nome:n,count:mF[n].count,media:(mF[n].tot/mF[n].count).toFixed(1)}; }).sort(function(a,b){ return a.media-b.media; });
   qs('tabRating').innerHTML=fr.map(function(r){ var rat=r.media<=3?'<span class="badge b-closed">Eccellente</span>':r.media<=7?'<span class="badge b-int">Buono</span>':'<span class="badge b-open">Monitorare</span>'; return '<tr><td><b>'+r.nome+'</b></td><td>'+r.count+'</td><td>'+r.media+' gg</td><td>'+rat+'</td></tr>'; }).join('')||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Nessun dato.</td></tr>';
-  if(chForn) chForn.destroy();
-  chForn=new Chart(qs('chForn').getContext('2d'),{type:'bar',data:{labels:fr.map(function(r){ return r.nome; }),datasets:[{label:'Giorni medi',data:fr.map(function(r){ return parseFloat(r.media); }),backgroundColor:'#3498db',borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{}}}});
+  disegnaBar(qs('chForn'), fr.map(function(r){ return r.nome; }), fr.map(function(r){ return parseFloat(r.media); }), '#3498db', 'Giorni medi');
   var condoT=fC?DB.condomini.filter(function(c){ return c.id===fC; }):DB.condomini;
   qs('tabCrit').innerHTML=condoT.map(function(c){ var inv=DB.interventi.filter(function(x){ return x.condoId===c.id; }); var sin=inv.filter(function(x){ return x.sin==='Si'; }).length; var g=inv.length>=4?'<span class="badge b-open">Alto</span>':inv.length>=2?'<span class="badge b-pre">Medio</span>':'<span class="badge b-closed">Basso</span>'; return '<tr><td><b>'+c.nome+'</b></td><td>'+inv.length+'</td><td>'+sin+'</td><td>'+g+'</td></tr>'; }).join('');
   var mesi=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
   var mCh=Array(12).fill(0), mAp=Array(12).fill(0);
   chiusi.forEach(function(x){ mCh[new Date(x.dataCh).getMonth()]++; });
   tutti.filter(function(x){ return x.stato==='Aperto'; }).forEach(function(x){ mAp[new Date(x.dataAp).getMonth()]++; });
-  if(chMens) chMens.destroy();
-  chMens=new Chart(qs('chMens').getContext('2d'),{type:'bar',data:{labels:mesi,datasets:[{label:'Chiuse',data:mCh,backgroundColor:'#27ae60',borderRadius:4},{label:'Aperte',data:mAp,backgroundColor:'#e74c3c',borderRadius:4}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},scales:{y:{beginAtZero:true},x:{}}}});
+  disegnaBarDoppio(qs('chMens'), mesi, mCh, mAp, '#27ae60', '#e74c3c', 'Chiuse', 'Aperte');
 }
 
 // ── CALENDARIO PROGRAMMATI ────────────────────────────────────────────────────
@@ -2993,6 +2990,122 @@ async function caricaFilesDrive(praticaId) {
   } catch(e) {
     return [];
   }
+}
+
+
+// ── GRAFICI CANVAS NATIVI (no dipendenze esterne) ────────────────────────────
+function disegnaDonut(canvas, labels, data, colors) {
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width = canvas.offsetWidth || 300;
+  var H = canvas.height = 200;
+  ctx.clearRect(0,0,W,H);
+  var total = data.reduce(function(a,b){ return a+b; }, 0);
+  if(!total) return;
+  var cx = W/2, cy = 80, r = 65, ri = 38;
+  var angle = -Math.PI/2;
+  data.forEach(function(v,i){
+    var slice = (v/total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,angle,angle+slice);
+    ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
+    angle += slice;
+  });
+  // Foro centrale
+  ctx.beginPath();
+  ctx.arc(cx,cy,ri,0,Math.PI*2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  // Totale al centro
+  ctx.fillStyle = '#1a2332';
+  ctx.font = 'bold 18px DM Sans,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(total, cx, cy+6);
+  // Legenda
+  var legY = 165;
+  var legX = 10;
+  labels.forEach(function(l,i){
+    if(i===3) { legX = W/2; legY = 165; }
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillRect(legX, legY, 10, 10);
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '11px DM Sans,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(l + ' (' + data[i] + ')', legX+14, legY+9);
+    legY += 16;
+  });
+}
+
+function disegnaBar(canvas, labels, data, color, label) {
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width = canvas.offsetWidth || 300;
+  var H = canvas.height = 200;
+  ctx.clearRect(0,0,W,H);
+  if(!data.length) return;
+  var padL=40, padB=50, padT=10, padR=10;
+  var maxV = Math.max.apply(null, data) || 1;
+  var bW = Math.max(8, (W-padL-padR)/data.length - 4);
+  var bX = padL;
+  ctx.fillStyle = '#f1f5f9';
+  ctx.fillRect(padL, padT, W-padL-padR, H-padB-padT);
+  // Linee guida
+  for(var g=0;g<=4;g++){
+    var gy = padT + (H-padB-padT)*(1-g/4);
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL,gy); ctx.lineTo(W-padR,gy); ctx.stroke();
+    ctx.fillStyle='#9ca3af'; ctx.font='10px sans-serif'; ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV*g/4), padL-4, gy+3);
+  }
+  data.forEach(function(v,i){
+    var bH = ((v/maxV) * (H-padB-padT));
+    var x = padL + i*(bW+4);
+    ctx.fillStyle = color;
+    ctx.fillRect(x, H-padB-bH, bW, bH);
+    ctx.fillStyle='#6b7280'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+    var lbl = labels[i] ? labels[i].substring(0,10) : '';
+    ctx.fillText(lbl, x+bW/2, H-padB+14);
+    if(v>0){ ctx.fillStyle='#1a2332'; ctx.fillText(v, x+bW/2, H-padB-bH-3); }
+  });
+}
+
+function disegnaBarDoppio(canvas, labels, data1, data2, c1, c2, l1, l2) {
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width = canvas.offsetWidth || 300;
+  var H = canvas.height = 220;
+  ctx.clearRect(0,0,W,H);
+  var padL=30, padB=60, padT=10, padR=10;
+  var maxV = Math.max.apply(null, data1.concat(data2)) || 1;
+  var grpW = (W-padL-padR) / labels.length;
+  var bW = Math.max(4, grpW/2 - 3);
+  // Linee guida
+  for(var g=0;g<=4;g++){
+    var gy = padT + (H-padB-padT)*(1-g/4);
+    ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(padL,gy); ctx.lineTo(W-padR,gy); ctx.stroke();
+    ctx.fillStyle='#9ca3af'; ctx.font='10px sans-serif'; ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV*g/4), padL-2, gy+3);
+  }
+  labels.forEach(function(l,i){
+    var x = padL + i*grpW;
+    var h1 = (data1[i]/maxV)*(H-padB-padT);
+    var h2 = (data2[i]/maxV)*(H-padB-padT);
+    ctx.fillStyle=c1; ctx.fillRect(x+2, H-padB-h1, bW, h1);
+    ctx.fillStyle=c2; ctx.fillRect(x+bW+4, H-padB-h2, bW, h2);
+    ctx.fillStyle='#6b7280'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(l, x+grpW/2, H-padB+14);
+  });
+  // Legenda
+  var ly = H-18;
+  ctx.fillStyle=c1; ctx.fillRect(W/2-60,ly,10,10);
+  ctx.fillStyle='#374151'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+  ctx.fillText(l1, W/2-46, ly+9);
+  ctx.fillStyle=c2; ctx.fillRect(W/2+10,ly,10,10);
+  ctx.fillText(l2, W/2+24, ly+9);
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
