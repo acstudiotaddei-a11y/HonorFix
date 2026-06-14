@@ -3056,7 +3056,7 @@ document.addEventListener('click',function(e){ if(!e.target.closest('.search-wra
 function esportaCSV(){ var h=['Protocollo','Tipo','Urgente','Sinistro','N.SinCompagnia','Condominio','Polizza','Banca','Richiedente','Fornitore','Apertura','Chiusura','Stato','Note chiusura']; var rows=DB.interventi.map(function(x){ var c=DB.condomini.find(function(d){ return d.id===x.condoId; })||{nome:'',polizza:'',banca:''}; var f=(DB.fornitori.find(function(d){ return d.id===x.fornId; })||{nome:''}).nome; var p=x.persId?(DB.persone.find(function(d){ return d.id===x.persId; })||{nome:''}).nome:''; return [x.id,x.tipo,x.urgente?'SI':'NO',x.sin,x.sinComp||'',c.nome,c.polizza||'',c.banca||'',p,f,x.dataAp,x.dataCh,x.stato,x.noteCh||''].map(function(v){ return '"'+v+'"'; }).join(';'); }); var csv='\uFEFF'+[h.join(';')].concat(rows).join('\n'); var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})); a.download='HonorFix_'+oggi()+'.csv'; a.click(); }
 
 // ── GOOGLE APPS SCRIPT INTEGRATION ─────────────────────────────────────────
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywuq4Jf5ousQHXbvXI9GXgJzqeNVHqgOUEGM_WHAbBO98xGpdS14Ry9FJGaiAaxGqV/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypmsZwm5uz2EQ7nM99-PpJh5UMo-Hd-OXt6SrAzbvnrWA1yFRRYBnn_Oq2lIulI1rS/exec';
 
 function obj2rows(arr, fields) {
   var rows = [fields];
@@ -3084,7 +3084,7 @@ var FIELDS = {
   Programmati:['id','descr','condoId','fornId','data','ric','note']
 };
 
-var GS_URL = "https://script.google.com/macros/s/AKfycbywuq4Jf5ousQHXbvXI9GXgJzqeNVHqgOUEGM_WHAbBO98xGpdS14Ry9FJGaiAaxGqV/exec";
+var GS_URL = "https://script.google.com/macros/s/AKfycbypmsZwm5uz2EQ7nM99-PpJh5UMo-Hd-OXt6SrAzbvnrWA1yFRRYBnn_Oq2lIulI1rS/exec";
 
 // ── SALVATAGGIO SU GOOGLE SHEETS ─────────────────────────────────────────────
 async function gsSalvaTutto() {
