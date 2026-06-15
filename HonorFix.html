@@ -190,7 +190,7 @@ tr.rs{background:#eff6ff!important;}
     </div>
     <div class="nav-item" onclick="goPanel('registro',this)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      Registro Pratiche
+      Registro Sinistri
       <span class="nav-badge" id="badgeAp">0</span>
     </div>
     <div class="nav-sec">Anagrafiche</div>
@@ -244,7 +244,7 @@ tr.rs{background:#eff6ff!important;}
         </div>
         <div class="row">
           <div class="col"><label>Tipologia</label><select id="tipoPratica"><option value="INT">Intervento</option><option value="PRE">Preventivo</option></select></div>
-          <div class="col"><label>Sinistro?</label><select id="isSinistro" onchange="toggleSin()"><option value="No">No</option><option value="Si">Sì — sinistro</option></select></div>
+          
           <div class="col"><label>Data apertura</label><input type="date" id="dataAp"></div>
         </div>
         <div class="row">
@@ -370,7 +370,7 @@ tr.rs{background:#eff6ff!important;}
     <!-- REGISTRO -->
     <div id="panel-registro" class="panel">
       <div class="page-hdr">
-        <div><div class="page-title">Registro Pratiche</div><div class="page-sub">Tutti gli interventi dello studio</div></div>
+        <div><div class="page-title">Registro Sinistri</div><div class="page-sub">Tutti gli interventi dello studio</div></div>
         <div class="btn-grp">
           <button class="btn btn-outline btn-sm" onclick="esportaCSV()">⬇ CSV</button>
           <button class="btn btn-outline btn-sm" onclick="window.print()">🖨 Stampa</button>
@@ -386,7 +386,7 @@ tr.rs{background:#eff6ff!important;}
       <div class="card">
         <div class="fb">
           <select id="fStato" onchange="renderReg()"><option value="">Tutti gli stati</option><option value="Aperto">Aperti</option><option value="Chiuso">Chiusi</option></select>
-          <select id="fTipo" onchange="renderReg()"><option value="">Tutti i tipi</option><option value="ord">Ordinari</option><option value="sin">Sinistri</option><option value="urg">Urgenti</option></select>
+          
           <select id="fCondo" onchange="renderReg()"><option value="">Tutti i condomini</option></select>
           <input type="text" id="fTxt" placeholder="Cerca..." oninput="renderReg()" style="min-width:130px">
           <input type="date" id="fDa" onchange="renderReg()" title="Dal">
@@ -496,7 +496,7 @@ tr.rs{background:#eff6ff!important;}
         </div>
         </div>
         <div class="card-title">Modulo</div>
-        <div class="row"><div class="col2"><label>Ragione Sociale</label><input type="text" id="fNome"></div><div class="col"><label>Tipo</label><select id="fTipo"><option value="Fornitore">Fornitore tecnico</option><option value="Assicurazione">Compagnia assicurativa</option></select></div><div class="col"><label>Specializzazione</label><input type="text" id="fSpec"></div></div>
+        <div class="row"><div class="col2"><label>Ragione Sociale</label><input type="text" id="fNome"></div><div class="col"><select id="fTipo"><option value="Fornitore">Fornitore tecnico</option><option value="Assicurazione">Compagnia assicurativa</option></select></div><div class="col"><label>Specializzazione</label><input type="text" id="fSpec"></div></div>
         <div class="row"><div class="col"><label>Email</label><input type="email" id="fEmail"></div><div class="col"><label>PEC</label><input type="email" id="fPEC"></div></div>
         <div class="row">
           <div class="col"><label>Tel 1 (WhatsApp)</label><div style="display:flex;gap:6px"><input type="tel" id="fT1" style="margin-bottom:0;flex:1"><button class="btn btn-success btn-xs" onclick="apriWA()" style="flex-shrink:0">WA</button></div><div style="height:12px"></div></div>
@@ -2162,17 +2162,17 @@ function salvaPratica(){
   var descr=qs('descr').value.trim(), dataAp=qs('dataAp').value;
   var urgente=qs('chkUrg').checked;
   if(!condoId||!fornId||!descr){ toast('Compila condominio, fornitore e descrizione.','error'); return; }
-  var sd={sinComp:'',peritoNome:'',peritoEmail:'',peritoTel:'',noteSin:''};
-  if(sin==='Si'){ sd.sinComp=qs('sinComp').value; sd.peritoNome=qs('peritoNome').value; sd.peritoEmail=qs('peritoEmail').value; sd.peritoTel=qs('peritoTel').value; sd.noteSin=qs('noteSin').value; }
+  var sd={sinNum:'',sinComp:'',sinProt:'',peritoNome:'',peritoEmail:'',peritoTel:'',noteSin:''};
+  if(sin==='Si'){ sd.sinNum=qs('sinStudio')?qs('sinStudio').value:''; sd.sinComp=qs('sinComp').value; sd.sinProt=qs('sinProt')?qs('sinProt').value:''; sd.peritoNome=qs('peritoNome').value; sd.peritoEmail=qs('peritoEmail').value; sd.peritoTel=qs('peritoTel').value; sd.noteSin=qs('noteSin').value; }
   var allSel=allegati.filter(function(a){ return a.sel; }).map(function(a){ return a.name; });
   if(editId){
     var tk=DB.interventi.find(function(x){ return x.id===editId; });
-    if(tk){ tk.condoId=condoId;tk.fornId=fornId;tk.persId=persId;tk.tipo=tipo==='INT'?'Intervento':'Preventivo';tk.sin=sin;tk.urgente=urgente;tk.descr=descr;tk.dataAp=dataAp;tk.sinComp=sd.sinComp;tk.peritoNome=sd.peritoNome;tk.peritoEmail=sd.peritoEmail;tk.peritoTel=sd.peritoTel;tk.noteSin=sd.noteSin;tk.all=allSel; }
+    if(tk){ tk.condoId=condoId;tk.fornId=fornId;tk.persId=persId;tk.tipo=tipo==='INT'?'Intervento':'Preventivo';tk.sin=sin;tk.urgente=urgente;tk.descr=descr;tk.dataAp=dataAp;tk.sinNum=sd.sinNum;tk.sinComp=sd.sinComp;tk.sinProt=sd.sinProt;tk.peritoNome=sd.peritoNome;tk.peritoEmail=sd.peritoEmail;tk.peritoTel=sd.peritoTel;tk.noteSin=sd.noteSin;tk.all=allSel; }
     toast('Pratica aggiornata.','success');
   } else {
     DB._cnt++;
     var newId=(sin==='Si'?'SIN':tipo)+'-'+new Date().getFullYear()+'-'+String(DB._cnt).padStart(3,'0');
-    DB.interventi.unshift({id:newId,condoId:condoId,fornId:fornId,persId:persId,tipo:tipo==='INT'?'Intervento':'Preventivo',sin:sin,urgente:urgente,stato:'Aperto',descr:descr,dataAp:dataAp,dataCh:'',noteCh:'',sinComp:sd.sinComp,peritoNome:sd.peritoNome,peritoEmail:sd.peritoEmail,peritoTel:sd.peritoTel,noteSin:sd.noteSin,all:allSel});
+    DB.interventi.unshift({id:newId,condoId:condoId,fornId:fornId,persId:persId,tipo:tipo==='INT'?'Intervento':'Preventivo',sin:sin,urgente:urgente,stato:'Aperto',descr:descr,dataAp:dataAp,dataCh:'',noteCh:'',sinNum:sd.sinNum,sinComp:sd.sinComp,sinProt:sd.sinProt,peritoNome:sd.peritoNome,peritoEmail:sd.peritoEmail,peritoTel:sd.peritoTel,noteSin:sd.noteSin,all:allSel});
     editId=newId;
     qs('numProto').textContent=newId; qs('sinStudio').value=newId;
     qs('statoProto').textContent='Aperto'; qs('statoProto').className='s-open';
@@ -2472,8 +2472,8 @@ function renderReg(){
     var condo=(DB.condomini.find(function(c){ return c.id===x.condoId; })||{nome:'—'}).nome;
     var pers=x.persId?(DB.persone.find(function(p){ return p.id===x.persId; })||{nome:'—'}).nome:'—';
     var forn=(DB.fornitori.find(function(f){ return f.id===x.fornId; })||{nome:'—'}).nome;
-    var bT=x.sin==='Si'?'<span class="badge b-sin">Sinistro</span>':'<span class="badge b-int">'+x.tipo+'</span>';
-    var bU=x.urgente?' <span class="badge b-urg">🚨 Urgente</span>':'';
+    var bT='<span class="badge b-sin">Sinistro</span>';
+    var bU='';
     var bAll=(x.all&&x.all.length>0)?' <span class="badge" style="background:#fef3c7;color:#92400e" title="'+x.all.length+' allegato/i">📎 '+x.all.length+'</span>':'';
     var bS=x.stato==='Aperto'?'<span class="badge b-open">Aperto</span>':'<span class="badge b-closed">Chiuso</span>';
     var bCh=x.stato==='Aperto'?'<button class="btn btn-success btn-xs" onclick="chiudiDaReg(\''+x.id+'\')">Chiudi</button>':'';
@@ -2496,7 +2496,7 @@ function modificaDaReg(id){
   qs('selForn').value=tk.fornId;
   qs('selPers').value=tk.persId||'';
   qs('descr').value=tk.descr; qs('dataAp').value=tk.dataAp;
-  if(tk.sin==='Si'){ qs('sinStudio').value=tk.id; qs('sinComp').value=tk.sinComp||''; qs('peritoNome').value=tk.peritoNome||''; qs('peritoEmail').value=tk.peritoEmail||''; qs('peritoTel').value=tk.peritoTel||''; qs('noteSin').value=tk.noteSin||''; }
+  if(tk.sin==='Si'){ qs('sinStudio').value=tk.id; qs('sinComp').value=tk.sinComp||''; if(qs('sinProt')) qs('sinProt').value=tk.sinProt||''; qs('peritoNome').value=tk.peritoNome||''; qs('peritoEmail').value=tk.peritoEmail||''; qs('peritoTel').value=tk.peritoTel||''; qs('noteSin').value=tk.noteSin||''; }
   toggleSin();
   qs('numProto').textContent=id; qs('statoProto').textContent=tk.stato;
   qs('statoProto').className=tk.stato==='Aperto'?'s-open':'s-closed';
@@ -2796,7 +2796,7 @@ var FIELDS = {
   Condomini:  ['id','nome','ind','cf','ass','agenzia','agEmail','agTel','polizza','anno','banca','iban','note'],
   Persone:    ['id','nome','ruolo','condoId','condoIds','email','pec','tel','t2','t3','cf','piva','unita'],
   Fornitori:  ['id','nome','tipo','spec','email','pec','t1','t2','t3','ind'],
-  Interventi: ['id','condoId','fornId','persId','tipo','sin','urgente','stato','descr','dataAp','dataCh','noteCh','sinComp','peritoNome','peritoEmail','peritoTel','noteSin','all'],
+  Interventi: ['id','condoId','fornId','persId','tipo','sin','urgente','stato','descr','dataAp','dataCh','noteCh','sinNum','sinComp','sinProt','peritoNome','peritoEmail','peritoTel','noteSin','all'],
   Programmati:['id','descr','condoId','fornId','data','ric','note']
 };
 
