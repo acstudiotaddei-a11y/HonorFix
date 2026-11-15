@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verbali Assemblea – prototipo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#111827;background:#EEF1F5;font-size:15px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.top{background:#12305C;color:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 18px}
+.top b{font-size:17px}.top .sub{color:#C7D3E6;font-size:14px}
+.pill{padding:6px 12px;border-radius:999px;font-size:13px;font-weight:600}
+.pill.ok{background:#DCFCE7;color:#14532D}.pill.ko{background:#FEE2E2;color:#7F1D1D}
+.top .topbtns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}.top .btnTop{background:#1E4280;border:1px solid #3B5B94;color:#fff;border-radius:8px;min-height:38px;padding:0 12px}
+.fasi{display:flex;gap:8px;padding:10px 18px;background:#fff;border-bottom:1px solid #D5DCE6;flex-wrap:wrap}
+.fasi button{border:1px solid #C3CDD9;background:#fff;border-radius:10px;min-height:48px;padding:0 18px;font-weight:600;color:#334155;display:flex;align-items:center;gap:8px}
+.fasi button span{display:inline-flex;width:26px;height:26px;border-radius:999px;background:#E2E8F0;align-items:center;justify-content:center;font-size:13px}
+.fasi button.on{background:#1D4ED8;border-color:#1D4ED8;color:#fff}.fasi button.on span{background:#fff;color:#1D4ED8}
+main{padding:16px;max-width:1600px;margin:0 auto}
+.card{background:#fff;border:1px solid #D5DCE6;border-radius:10px;padding:16px}
+.col{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;color:#475569;font-weight:500}
+input[type=text],input[type=date],input[type=time],input[type=number],select,textarea{border:1px solid #C3CDD9;border-radius:7px;padding:8px 10px;background:#fff;min-height:42px;font-size:15px;color:#111827;max-width:100%}
+textarea{resize:vertical;line-height:1.5}
+h2{font-size:17px;margin:0}h3{font-size:15px;margin:0}
+.muted{color:#5B6676;font-size:13px}
+.btn{border:1px solid #C3CDD9;background:#fff;border-radius:8px;padding:0 14px;min-height:44px;font-weight:500}
+.btn.pri{background:#1D4ED8;border-color:#1D4ED8;color:#fff;font-weight:600}
+.btn.ai{background:#F1F5FF;border-color:#A9BEF5;color:#1E3A8A;font-weight:600}
+.btn.sm{min-height:36px;padding:0 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:default}
+table.g{width:100%;border-collapse:collapse}
+table.g th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:#475569;background:#F4F6F9;padding:8px 10px;border-bottom:1px solid #D5DCE6}
+table.g td{padding:7px 10px;border-bottom:1px solid #EDF0F4;vertical-align:middle}
+.n{text-align:right;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto;border:1px solid #D5DCE6;border-radius:10px;background:#fff}
+.seg{display:inline-flex;border:1px solid #C3CDD9;border-radius:8px;overflow:hidden;flex-wrap:nowrap}
+.seg button{border:0;border-right:1px solid #C3CDD9;background:#fff;min-height:42px;padding:0 11px;font-size:13px;font-weight:600;color:#334155}
+.seg button:last-child{border-right:0}
+.seg .on.F,.seg .on.P{background:#1D4ED8;color:#fff}.seg .on.C{background:#B45309;color:#fff}.seg .on.X,.seg .on.A{background:#475569;color:#fff}.seg .on.V{background:#0E7490;color:#fff}.seg .on.D{background:#6D28D9;color:#fff}.seg .on.U{background:#9A3412;color:#fff}
+.badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;background:#E2E8F0;color:#334155}
+.ok{color:#15803D}.ko{color:#B91C1C}.warn{color:#9A3412;font-size:13px}
+details>summary{cursor:pointer;font-weight:600;font-size:15px;padding:4px 0;min-height:32px}
+.odgrow{border:1px solid #D5DCE6;border-radius:10px;padding:12px;display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;background:#fff}
+.lett{display:inline-flex;min-width:30px;height:30px;padding:0 8px;border-radius:7px;background:#EEF2FF;color:#3730A3;font-weight:700;align-items:center;justify-content:center}
+.svolg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:1150px){.svolg{grid-template-columns:1fr}}
+.subnav{display:flex;gap:6px;flex-wrap:wrap}
+.subnav button{border:1px solid #C3CDD9;background:#fff;border-radius:8px;min-height:42px;padding:0 12px;font-size:14px;font-weight:600;color:#334155}
+.subnav button.on{background:#EFF4FF;border:2px solid #1D4ED8;color:#1E3A8A}
+.subnav button .d{font-size:11px;font-weight:700;margin-left:4px}
+.esito{border-radius:10px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center}
+.esito.ok{background:#F0FDF4;border:1px solid #BBF7D0}.esito.ko{background:#FEF2F2;border:1px solid #FECACA}.esito.nd{background:#F8FAFC;border:1px solid #E2E8F0}
+.esito big{font-size:21px;font-weight:700}
+.aiout{background:#F8FAFF;border:1px dashed #A9BEF5;border-radius:8px;padding:10px 12px;white-space:pre-wrap;font-size:14px;line-height:1.5}
+.mic{width:44px;height:44px;border-radius:999px;border:1px solid #C3CDD9;background:#fff;display:inline-flex;align-items:center;justify-content:center}
+.mic.live{background:#B91C1C;border-color:#B91C1C;color:#fff}
+.doc{background:#fff;border:1px solid #CBD5E1;border-radius:4px;padding:28px 34px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#111}
+.docwrap{position:sticky;top:10px;max-height:calc(100vh - 20px);overflow:auto;background:#EEF1F5}
+.blk{position:relative;border:1px dashed transparent;border-radius:4px;padding:4px 6px;margin:0 -6px 8px}
+.blk:hover,.blk:focus-within{border-color:#CBD5E1}
+.blk.man{border-color:#F59E0B;background:#FFFBEB}
+.blk [contenteditable]{outline:none}
+.blk .tag{position:absolute;right:4px;top:-12px;font-family:Inter,sans-serif;font-size:11px;background:#FEF3C7;color:#92400E;border-radius:5px;padding:1px 6px;display:none}
+.blk.man .tag{display:inline-flex;gap:6px;align-items:center}
+.blk .tag button{border:0;background:transparent;color:#92400E;font-weight:700;font-size:11px;cursor:pointer;text-decoration:underline}
+.doc p{margin:0 0 8px}
+.doc table{width:100%;border-collapse:collapse;margin:4px 0 10px;font-size:13.5px}
+.doc table.bord td,.doc table.bord th{border:1px solid #333;padding:2px 6px}
+.doc table.nob td{padding:2px 6px}
+.doc .c{text-align:center}.doc .r{text-align:right}
+.doc h1{font-size:17px;margin:0;text-align:center}
+.tb{display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:#F4F6F9;border:1px solid #CBD5E1;border-bottom:0;border-radius:6px 6px 0 0;padding:6px;position:sticky;top:0;z-index:2}
+.tbb{min-width:38px;min-height:38px;border:1px solid #CBD5E1;background:#fff;border-radius:6px;font-size:15px;padding:0 8px}.tbb.w{font-size:13px;font-weight:600}
+.tb select{min-height:38px;font-size:13px;padding:4px 8px}.tb .sep{width:1px;height:26px;background:#CBD5E1;margin:0 4px}
+#editor{border-radius:0 0 6px 6px;min-height:600px;outline:none}
+#editor section{margin:0 0 6px}#editor p.mov{font-style:italic}
+mark.es{background:#DBEAFE;color:inherit;border-radius:3px;padding:0 2px}mark.es.vuoto{background:#FEF3C7}mark.es.no{background:#FEE2E2}
+.home{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;align-items:start}@media(max-width:1000px){.home{grid-template-columns:1fr}}
+.nota{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px}
+.dlg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+.dlg>.card{max-width:760px;width:100%;max-height:88vh;overflow:auto}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;z-index:10;max-width:90vw}
+.upl{position:relative;overflow:hidden;display:inline-flex;align-items:center}
+.upl input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px}
+.chk input{width:20px;height:20px}
+.files{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.file{display:flex;gap:8px;align-items:center;font-size:13px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:4px 8px}
+</style>
+</head>
+<body>
+<div class="top"><b>Verbali Assemblea</b><span class="sub" id="hdrSub"></span><span class="pill" id="hdrQ"></span><span class="topbtns"><button class="btnTop" data-act="home">Condomìni</button><button class="btnTop" data-act="imp">Impostazioni</button><button class="btnTop" data-act="askDlg">Chiedi a Claude</button></span></div>
+<nav class="fasi" id="fasi" aria-label="Fasi"></nav>
+<main id="main"></main>
+<div id="dlg"></div>
+<script>
+// =============== DATI DI ESEMPIO (nella versione vera: foglio HonorFix + impostazioni) ===============
+const FRASI0={
+ consuntivo:{nome:'Approvazione consuntivo',testo:"Dopo che l'Amministratore ha illustrato il Rendiconto al [data rendiconto], già in possesso dei sigg. Condomini in quanto a termine di Legge inviato con la convocazione insieme agli altri allegati di seguito citati e ritenute esaustive le spiegazioni fornite all'assemblea, si passa alla votazione. Il Rendiconto Consuntivo al [data rendiconto], la relazione integrativa, il relativo riparto e il disciplinare dei compensi inviati con la convocazione, vengono approvati [esito] e vengono allegati al presente verbale sotto la voce [allegato] e ne costituiscono parte integrante."},
+ nomina:{nome:'Nomina / conferma amministratore',testo:"L'Assemblea conferma [esito] per l'esercizio con i compensi riportati nel preventivo ordinario dell'esercizio approvato, lo Studio Taddei Srl nella persona dell'Amministratore Lorenzo Taddei nato a Firenze il 11/02/1974 codice fiscale TDDLNZ74B11D612W, iscritto al Registro Confartamministratori al n. 83, con Studio in Via M. De Bernardi n. 65 in Firenze. I registri e tutta la documentazione del Condominio è conservata presso lo Studio (orario da lunedì a giovedì 9,30/13,00 e 15,00/18,00 previo appuntamento). Il disciplinare dei compensi dell'Amministratore è allegato al Rendiconto ([allegato]) inviato con la convocazione e ne costituisce parte integrante. Il rag. Lorenzo Taddei dichiara di essere in regola con gli obblighi previsti dalla \"Formazione continua dei professionisti\" e viene allegata la \"Dichiarazione di possesso dei requisiti ex art. 71 bis disp. att. c.c.\"\n[esito frase] L'Amministratore accetta e ringrazia."},
+ preventivo:{nome:'Approvazione preventivo',testo:"Il Rendiconto Preventivo, il relativo riparto e il prospetto delle rate inviati con la convocazione, vengono approvati [esito] dell'Assemblea e vengono allegati al presente verbale sotto la voce [allegato] e ne costituiscono parte integrante."},
+ lavori:{nome:'Lavori straordinari – preventivi',testo:"L'Amministratore illustra i preventivi pervenuti, allegati al presente verbale sotto la voce [allegato]."}
+};
+function P(titolo,tab,magg,chi,note){return{id:'o'+Math.random().toString(36).slice(2,8),titolo,tab:tab||'',magg,chi,note:note||'',appunti:'',voti:{},escl:{},dich:{},chiuso:false,snap:null};}
+function nuovaAss(condId,o){return Object.assign({id:'a'+Math.random().toString(36).slice(2,8),condId,stato:'preparazione',
+ ass:{tipo:'Ordinaria',esercizio:'',tab:'A',numero:'',video:false,dataRend:'',c1:{data:'',ora:'',luogo:'lo Studio Taddei in Via De Bernardi 65 - Firenze',agenda:false},c2:{data:'',ora:'',luogo:'lo Studio Taddei in Via De Bernardi 65 - Firenze',agenda:true},conv:2,deserta:true,presidente:'',segretario:'Taddei Lorenzo',oraAppello:'',chiusura:'',firmaFoglio:false},
+ odg:[],allegati:[],pres:{},docHtml:'',sv:'app',cur:null},o||{});}
+function condSemplice(id,nome,nomi,mill){const persone={},unita=[];nomi.forEach((n,i)=>{const p=id+'p'+i;persone[p]=n;unita.push({id:id+'u'+i,nome:'App. '+(i+1),mill:{A:mill[i]},tit:[{p,r:'prop'}],rapp:p});});return{id,nome,tabelle:[{id:'A',nome:'Generale'}],persone,unita};}
+function ESEMPIO(){
+ const pal={id:'pal',nome:'Condominio Palestrina 10',tabelle:[{id:'A',nome:'Generale'},{id:'B',nome:'Ascensore'},{id:'C',nome:'Riscaldamento'}],
+  persone:{p1:'Rossi Mario',p2:'Bianchi Paolo',p3:'Bianchi Laura',p4:'Conti Giulia',p5:'Ferri Andrea',p6:'Ferri Elena',p7:'Galli Stefano',p8:'Mancini Sara',p9:'Neri Lorenzo',p10:'Tozzi Luca',p11:'Pieri Anna',p12:'Ricci Davide',p13:'Sarti Marco'},
+  unita:[{id:'u1',nome:'App. 1',mill:{A:92.5,B:80,C:90},tit:[{p:'p1',r:'prop'}],rapp:'p1'},{id:'u2',nome:'App. 2',mill:{A:88,B:85,C:85},tit:[{p:'p2',r:'prop'},{p:'p3',r:'prop'}],rapp:'p2'},{id:'u3',nome:'App. 3',mill:{A:95.2,B:95,C:100},tit:[{p:'p4',r:'prop'}],rapp:'p4'},{id:'u4',nome:'Box 1',mill:{A:12.3,B:0,C:0},tit:[{p:'p4',r:'prop'}],rapp:'p4'},{id:'u5',nome:'App. 4',mill:{A:101.4,B:100,C:105},tit:[{p:'p6',r:'nudo'},{p:'p5',r:'usu'}],rapp:'p6'},{id:'u6',nome:'App. 5',mill:{A:97.6,B:105,C:100},tit:[{p:'p7',r:'prop'}],rapp:'p7'},{id:'u7',nome:'App. 6',mill:{A:118.3,B:110,C:115},tit:[{p:'p8',r:'prop'}],rapp:'p8'},{id:'u8',nome:'App. 7',mill:{A:84.9,B:95,C:90},tit:[{p:'p9',r:'prop'},{p:'p10',r:'cond'}],rapp:'p9'},{id:'u9',nome:'App. 8',mill:{A:99.8,B:105,C:100},tit:[{p:'p11',r:'prop'}],rapp:'p11'},{id:'u10',nome:'App. 9',mill:{A:105,B:110,C:105},tit:[{p:'p12',r:'prop'}],rapp:'p12'},{id:'u11',nome:'App. 10',mill:{A:93.1,B:115,C:110},tit:[{p:'p13',r:'prop'}],rapp:'p13'},{id:'u12',nome:'Box 2',mill:{A:11.9,B:0,C:0},tit:[{p:'p13',r:'prop'}],rapp:'p13'}]};
+ const ros=condSemplice('ros','Condominio Via Rossini 8',['Albini Carla','Bruni Enrico','Corsi Marta','Dini Paolo','Elmi Sergio','Fabbri Lucia'],[180,170,165,160,170,155]);
+ const eur=condSemplice('eur','Condominio Viale Europa 120',['Gori Andrea','Lapi Silvia','Masi Franco','Nesi Rita','Orsi Carlo','Papi Elisa','Rota Gianni','Sodi Maria'],[130,125,120,125,130,120,125,125]);
+ const odg25=[P('Esame e approvazione rendiconto gestione ordinaria al 30/9/2025 e prospetto ripartizione','','ORD','ord'),P('Nomina Amministratore','','C4','ord'),P('Esame ed approvazione Rendiconto Preventivo 2025/2026, relativa ripartizione e prospetto rate','','ORD','ord'),P('Eventuali e varie','','INFO','ord')];
+ const a1=nuovaAss('pal',{stato:'svolta',odg:odg25,docHtml:'<p class="c"><b>VERBALE DI ASSEMBLEA</b><br>Ordinaria</p><p>(verbale 2025 di esempio, già chiuso)</p>'});Object.assign(a1.ass,{esercizio:'2025/2026',numero:'11',c1:{...a1.ass.c1,data:'2025-10-21',ora:'12:00'},c2:{...a1.ass.c2,data:'2025-10-22',ora:'18:30'}});
+ const a2=nuovaAss('pal',{odg:[P('Esame e approvazione rendiconto gestione ordinaria al 30/9/2026 e prospetto ripartizione','','ORD','ord'),P('Nomina Amministratore','','C4','ord'),P('Esame ed approvazione Rendiconto Preventivo 2026/2027, relativa ripartizione e prospetto rate','','ORD','ord'),
+  P('Rifacimento facciata: approvazione lavori e costituzione del fondo speciale','','C4','str',"L'Amministratore ricorda che la verifica del tecnico ha evidenziato distacchi di intonaco sul lato strada e che sono stati richiesti tre preventivi."),P('Eventuali e varie','','INFO','ord')]});
+ Object.assign(a2.ass,{esercizio:'2026/2027',numero:'12',dataRend:'30/9/2026',c1:{...a2.ass.c1,data:'2026-12-02',ora:'12:00'},c2:{...a2.ass.c2,data:'2026-12-03',ora:'18:30'}});
+ const [o1,o2,o3,o4]=a2.odg.map(p=>p.id);
+ a2.allegati=[{id:'g1',titolo:'Rendiconto consuntivo al 30/9/2026, relazione integrativa, riparto e disciplinare dei compensi',punti:[o1,o2],fase:'convocazione',da:'',files:[]},{id:'g2',titolo:'Rendiconto preventivo 2026/2027, riparto e prospetto rate',punti:[o3],fase:'convocazione',da:'',files:[]},{id:'g3',titolo:'Preventivi per il rifacimento della facciata',punti:[o4],fase:'convocazione',da:'',files:[]}];
+ const a3=nuovaAss('ros',{odg:[P('Approvazione rendiconto 2025/2026','','ORD','ord'),P('Approvazione preventivo 2026/2027','','ORD','ord'),P('Eventuali e varie','','INFO','ord')]});Object.assign(a3.ass,{esercizio:'2026/2027',numero:'7',c1:{...a3.ass.c1,data:'2026-12-02',ora:'08:00'},c2:{...a3.ass.c2,data:'2026-12-03',ora:'21:00'}});
+ const a4=nuovaAss('eur',{odg:[P('Sostituzione portone di ingresso','','C4','str'),P('Eventuali e varie','','INFO','ord')]});Object.assign(a4.ass,{tipo:'Straordinaria',esercizio:'2026/2027',numero:'4',c1:{...a4.ass.c1,data:'2026-12-09',ora:'08:00'},c2:{...a4.ass.c2,data:'2026-12-10',ora:'18:00'}});
+ return{v:4,condomini:[pal,ros,eur],assemblee:[a1,a2,a3,a4],frasi:JSON.parse(JSON.stringify(FRASI0)),amm:{firma:'Rag. Lorenzo Taddei'},imp:{durata:2},condSel:'pal',curAss:null,fase:0,firma:false,rip:{cond:'pal',tab:'A',importo:''}};}
+
+// =============== REGOLE ===============
+const MAGG={
+ ORD:{nome:'Ordinaria – art. 1136 c.2 / c.3',c1:{t:'int',m:1/2},c2:{t:'int',m:1/3}},
+ C4:{nome:'Art. 1136 c.4 – nomina/revoca amministratore, liti, straordinaria di notevole entità',c1:{t:'int',m:1/2},c2:{t:'int',m:1/2}},
+ I2:{nome:'Art. 1120 c.2 – energetico, barriere, sicurezza (1/2 valore)',c1:{t:'int',m:1/2},c2:{t:'int',m:1/2}},
+ INN:{nome:'Innovazioni – art. 1136 c.5 (2/3 valore)',c1:{t:'int',m:2/3},c2:{t:'int',m:2/3}},
+ QQ:{nome:'Art. 1117-ter – 4/5 partecipanti e valore',c1:{t:'par',f:4/5,m:4/5},c2:{t:'par',f:4/5,m:4/5}},
+ UN:{nome:'Unanimità dei partecipanti',un:true},
+ INFO:{nome:'Nessuna votazione (informativo)',info:true}};
+const CHI={ord:'usufruttuario / proprietario',str:'nudo proprietario / proprietario',cond:'conduttore (riscaldamento)'};
+const RUOLO={prop:'proprietario',usu:'usufruttuario',nudo:'nudo prop.',cond:'conduttore'};
+
+// =============== STATO ===============
+let DB;try{DB=JSON.parse(localStorage.getItem('verbaliAss_v4'))}catch(e){}
+if(!DB||DB.v!==4)DB=ESEMPIO();
+let S=null;
+function apri(id){const A=DB.assemblee.find(x=>x.id===id);if(!A)return;const C=DB.condomini.find(c=>c.id===A.condId);
+ const d=(k,v)=>Object.defineProperty(A,k,{value:v,configurable:true,enumerable:false,writable:true});
+ d('cond',C);d('persone',C.persone);d('unita',C.unita);d('tabelle',C.tabelle);d('frasi',DB.frasi);d('amm',DB.amm);
+ Object.defineProperty(A,'storico',{get:()=>DB.assemblee.filter(x=>x.condId===A.condId&&x.id!==A.id&&x.odg.length),configurable:true,enumerable:false});
+ S=A;DB.curAss=id;}
+if(DB.curAss)apri(DB.curAss);if(!S)DB.fase=0;
+let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem('verbaliAss_v4',JSON.stringify(DB))}catch(e){}},300);}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const f2=n=>{const v=(Math.round(n*100)/100).toFixed(2).split('.');return v[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+v[1];};
+const nm=pid=>S.persone[pid]||'—';
+const ora=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),3000);}
+const LET=i=>{let s='';i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26);}return s;};
+const tabDi=p=>p.tab||S.ass.tab;
+const GG=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'],MM=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+function giornoLungo(iso){if(!iso)return '___';const d=new Date(iso+'T12:00');return GG[d.getDay()]+' '+d.getDate()+' '+MM[d.getMonth()]+' '+d.getFullYear();}
+function dataIt(iso){if(!iso)return '___';const[a,m,g]=iso.split('-');return g+'/'+m+'/'+a;}
+const oraIt=t=>(t||'___').replace(':','.');
+const minuti=t=>{const[h,m]=(t||'0:0').split(':').map(Number);return h*60+m;};
+const condNome=id=>(DB.condomini.find(c=>c.id===id)||{}).nome||'';
+function conflitto(aId,data,orario){if(!data||!orario)return null;const t=minuti(orario);
+ return DB.assemblee.find(x=>x.id!==aId&&x.stato!=='svolta'&&x.ass.c2.data===data&&x.ass.c2.ora&&Math.abs(minuti(x.ass.c2.ora)-t)<DB.imp.durata*60)||null;}
+
+// =============== CALCOLI (li fa il codice, non l'IA) ===============
+function votante(u,chi){const by=r=>u.tit.find(t=>t.r===r);
+ if(chi==='cond'&&by('cond'))return by('cond').p;
+ if(by('usu'))return chi==='str'?((by('nudo')||{}).p||u.rapp):by('usu').p;
+ return u.rapp||(u.tit.find(t=>t.r==='prop')||{}).p;}
+const tabTot=tab=>S.unita.reduce((s,u)=>s+(+u.mill[tab]||0),0);
+function partecipanti(tab,chi){const m={};S.unita.forEach(u=>{const v=+u.mill[tab]||0;if(v<=0)return;const p=votante(u,chi);if(!p)return;(m[p]=m[p]||{pid:p,mill:0,un:[]});m[p].mill+=v;m[p].un.push(u.nome);});
+ return Object.values(m).sort((a,b)=>nm(a.pid).localeCompare(nm(b.pid)));}
+function delNome(r){return r.del?nm(r.del):(r.delNome||'');}
+function presenza(pid){const r=S.pres[pid]||{st:'A'};
+ if(r.st==='P')return{in:true,modo:'proprio'};if(r.st==='V')return{in:true,modo:'video'};
+ if(r.st==='D'){if(r.del){const d=S.pres[r.del];if(d&&(d.st==='P'||d.st==='V'))return{in:true,modo:'delega',del:delNome(r)};return{in:false,warn:'il delegato non risulta presente'};}
+  if(r.delNome&&r.delNome.trim())return{in:true,modo:'delega',del:r.delNome.trim()};return{in:false,warn:'indica il delegato'};}
+ return{in:false};}
+function quorum(){const tab=S.ass.tab,parts=partecipanti(tab,'ord'),tot=tabTot(tab);const iv=parts.filter(x=>presenza(x.pid).in);const mill=iv.reduce((s,x)=>s+x.mill,0);
+ const c1=iv.length>parts.length/2&&mill>=tot*2/3-1e-6,c2=iv.length>=parts.length/3-1e-9&&mill>=tot/3-1e-6;
+ return{n:iv.length,tot:parts.length,mill,totM:tot,c1,c2,ok:S.ass.conv==1?c1:c2,parts,iv};}
+function calc(p){const m=MAGG[p.magg]||MAGG.ORD;const tab=tabDi(p);const tot=tabTot(tab);const parts=partecipanti(tab,p.chi);
+ const rows=parts.map(x=>({...x,pr:presenza(x.pid),escl:!!p.escl[x.pid],v:p.voti[x.pid]||''}));const iv=rows.filter(r=>r.pr.in&&!r.escl);
+ const g=k=>{const a=iv.filter(r=>r.v===k);return{n:a.length,m:a.reduce((s,r)=>s+r.mill,0),l:a};};const F=g('F'),C=g('C'),X=g('X');const nv=iv.filter(r=>!r.v);
+ if(m.info)return{info:true,rows,iv,parts,tot,F,C,X,nv,tab};
+ let ok,req;
+ if(m.un){ok=F.n===parts.length&&F.m>=tot-1e-6;req='unanimità dei partecipanti';}
+ else{const r=S.ass.conv==1?m.c1:m.c2;const okT=r.t==='int'?F.n>iv.length/2:F.n>=Math.ceil(r.f*parts.length-1e-9);const need=r.m*tot;ok=okT&&F.m>=need-0.005;
+  req=(r.t==='int'?'maggioranza degli intervenuti':'almeno '+Math.ceil(r.f*parts.length-1e-9)+' partecipanti')+' e almeno '+f2(Math.ceil(need*100-1e-6)/100)+' millesimi';}
+ return{ok,req,rows,iv,parts,tot,F,C,X,nv,tab};}
+function chiNome(r){return nm(r.pid)+(r.pr.modo==='delega'?' (per delega a '+r.pr.del+')':'');}
+const elenco=l=>l.length?l.map(r=>chiNome(r)+' '+f2(r.mill)).join(', '):'nessuno';
+
+// =============== ESITI (calcolati dal programma, visibili appena tutti hanno votato) ===============
+function esitoTesti(p){if(!p)return null;const c=p.chiuso&&p.snap?p.snap:calc(p);if(c.info)return null;if(!p.chiuso&&(c.nv.length||!c.iv.length))return null;
+ const unan=c.F.n===c.iv.length&&c.iv.length>0;
+ const det=`(favorevoli: ${elenco(c.F.l)}; contrari: ${elenco(c.C.l)}; astenuti: ${elenco(c.X.l)})`;
+ const voto=unan?"all'unanimità dei presenti":`a maggioranza, con il voto favorevole di nr. ${c.F.n} condòmini su ${c.iv.length} intervenuti per complessivi millesimi ${f2(c.F.m)} ${det}`;
+ if(c.ok)return{ok:true,voto,frase:"L'Assemblea approva "+voto+'.'};
+ const no=`non avendo raggiunto la maggioranza richiesta (${c.req}): voti favorevoli nr. ${c.F.n} per millesimi ${f2(c.F.m)} ${det}`;
+ return{ok:false,voto:'[NON APPROVATO, '+no+']',frase:'La proposta non è approvata, '+no+'.'};}
+function lettereDi(p){if(!p)return 'Allegato ___';const l=S.allegati.map((a,i)=>({a,L:LET(i)})).filter(x=>x.a.punti.includes(p.id)).map(x=>x.L);
+ return l.length?(l.length===1?'Allegato '+l[0]:'Allegati '+l.slice(0,-1).join(', ')+' e '+l[l.length-1]):'Allegato ___';}
+const vuotoE=k=>k==='voto'?'[esito]':'[esito frase]';
+const markE=(p,k)=>{const e=esitoTesti(p);return `<mark class="es${e?(e.ok?'':' no'):' vuoto'}" data-esito="${p?p.id:''}" data-k="${k}">${e?esc(e[k]):vuotoE(k)}</mark>`;};
+const CAMPI={'data rendiconto':p=>esc(S.ass.dataRend||'___'),'allegato':p=>esc(lettereDi(p)),'esito':p=>markE(p,'voto'),'esito frase':p=>markE(p,'frase')};
+function fraseHtml(p,key){const t=((S.frasi[key]||{}).testo||'').trim();if(!t)return '';
+ return t.split('\n').map(r=>'<p>'+esc(r).replace(/\[([^\]]+)\]/g,(m,k)=>CAMPI[k.toLowerCase()]?CAMPI[k.toLowerCase()](p):m)+'</p>').join('');}
+
+// =============== PEZZI DEL VERBALE ===============
+function snOdg(){return S.odg.map((p,i)=>`${i+1}. ${esc(p.titolo.replace(/[;.]\s*$/,''))}${i<S.odg.length-1?';':'.'}`).join('<br>');}
+function snAppello(){const a=S.ass,q=quorum();const presRows=q.parts.filter(x=>presenza(x.pid).in),assRows=q.parts.filter(x=>!presenza(x.pid).in);
+ const extra=Object.keys(S.persone).filter(p=>presenza(p).in&&!q.parts.find(x=>x.pid===p));
+ return `<p>L'assemblea elegge a Presidente ${esc(a.presidente||'___')}, che chiama a fungere da segretario ${esc(a.segretario||'___')}. Il Presidente verifica le prove della regolare convocazione di tutti gli aventi diritto; constatato che gli stessi sono stati convocati con il preavviso previsto dall'art. 66 disp.att. del codice civile, e/o con il preavviso eventualmente previsto dal Regolamento di Condominio contrattuale, ove esistente, procede all'appello degli intervenuti con l'ausilio del segretario.</p>
+<p>Fatto l'appello alle ore ${esc(a.oraAppello||'___')}, risultano presenti o rappresentati per delega, i Signori:</p>
+<table class="bord" data-w="45,40,15"><tbody><tr><th>Nominativo</th><th>Delegato</th><th class="r">Mill.</th></tr>${presRows.map(x=>{const pr=presenza(x.pid);return `<tr><td>${esc(nm(x.pid))}</td><td>${pr.modo==='delega'?esc(pr.del):pr.modo==='video'?'(in videoconferenza)':''}</td><td class="r">${f2(x.mill)}</td></tr>`;}).join('')||'<tr><td>—</td><td></td><td></td></tr>'}</tbody></table>
+<p>Risultano assenti, invece, i Signori:</p>
+<table class="bord" data-w="85,15"><tbody><tr><th>Nominativo</th><th class="r">Mill.</th></tr>${assRows.map(x=>`<tr><td>${esc(nm(x.pid))}</td><td class="r">${f2(x.mill)}</td></tr>`).join('')||'<tr><td>nessuno</td><td></td></tr>'}</tbody></table>
+${extra.length?`<p>Sono inoltre presenti, con diritto di voto solo sugli argomenti di loro competenza: ${extra.map(p=>esc(nm(p))).join(', ')}.</p>`:''}
+<p>Essendo intervenuti o rappresentati per delega nr. ${q.n} condòmini su un totale di nr. ${q.tot} convocati, per complessivi millesimi ${f2(q.mill)} del valore totale, ${q.ok?"si può procedere con la discussione e la votazione dei punti all'OdG.":"non si raggiunge il numero legale per la costituzione dell'assemblea."}</p>
+${q.ok?"<p>Il Presidente dichiara validamente costituita l'assemblea ed apre la discussione sull'O.D.G.</p>":''}`;}
+function bozzaIniziale(){const a=S.ass,T=esc(a.tipo),c=a.conv==2?a.c2:a.c1;let h=`<p class="c"><b>VERBALE DI ASSEMBLEA</b><br><b>${T}</b><br>(C.c., art. 1136)<br><b>- ${esc(S.cond.nome)} -</b></p>`;
+ if(a.conv==2&&a.deserta)h+=`<p><b>Verbale dell'Assemblea ${T} di prima convocazione del giorno ${giornoLungo(a.c1.data)}</b></p><p>Alle ore ${oraIt(a.c1.ora)} del giorno ${giornoLungo(a.c1.data)} presso ${esc(a.c1.luogo)} si riunisce in prima convocazione l'Assemblea ${T} del ${esc(S.cond.nome)}. Essendo trascorsa un'ora da quella fissata per la convocazione e constatato che non sono presenti condomini in numero legale per la costituzione dell'Assemblea, l'Amministratore dichiara deserta la seduta, sottoscrivendo il presente verbale.</p><p class="r">L'Amministratore<br>${esc(S.amm.firma)}</p>`;
+ h+=`<p><b>Verbale di assemblea ${T} di ${a.conv==2?'seconda':'prima'} convocazione del giorno ${giornoLungo(c.data)}</b></p><p>Oggi ${dataIt(c.data)} alle ore ${oraIt(c.ora)}, presso ${esc(c.luogo)}${a.video?' e in collegamento in videoconferenza':''}, si è radunata in ${a.conv==2?'seconda':'prima'} convocazione l'Assemblea dei condomini dello stabile ${esc(S.cond.nome)}, indetta con regolare avviso comunicato a tutti i condomini, per discutere e deliberare sul seguente:</p><p class="c"><b>Ordine del Giorno</b></p><p data-auto="odg">${snOdg()}</p><div data-auto="appello">${snAppello()}</div>`;
+ return h;}
+const titoloPunto=p=>{const i=S.odg.indexOf(p);return `<b>Punto ${i+1}° - ${esc(p.titolo.replace(/[;.]\s*$/,''))}${i<S.odg.length-1?';':'.'}</b>`;};
+function snChiusura(){const a=S.ass;return `<p>Alle ore ${oraIt(a.chiusura)} il Presidente dichiara chiusa l'Assemblea.</p><table class="nob" data-w="50,50"><tbody><tr><td class="c">Il Presidente<br>${esc(a.presidente||'')}</td><td class="c">Il Segretario<br>${esc(a.segretario||'')}</td></tr></tbody></table>`+(S.allegati.length?`<p><b>Allegati</b><br>${S.allegati.map((x,i)=>`Allegato ${LET(i)} – ${esc(x.titolo)}${x.da?' (consegnato in assemblea da '+esc(x.da)+')':''}`).join('<br>')}</p>`:'');}
+
+// =============== EDITOR ===============
+const AUTO={odg:snOdg,appello:snAppello};
+const ED=()=>$('#editor');
+function salvaDoc(){const ed=ED();if(ed&&S){S.docHtml=ed.innerHTML;save();}}
+function aggiornaAuto(force){const ed=ED();if(!ed)return;ed.querySelectorAll('[data-auto]').forEach(el=>{if(!force&&(el.dataset.edited==='1'||(el.dataset.auto==='appello'&&S.cur)))return;if(force)delete el.dataset.edited;const f=AUTO[el.dataset.auto];if(!f)return;const h=f();if(el.innerHTML!==h)el.innerHTML=h;});salvaDoc();}
+function aggiornaEsiti(){const ed=ED();if(!ed)return;
+ ed.querySelectorAll('mark[data-esito]').forEach(m=>{const p=S.odg.find(x=>x.id===m.dataset.esito);if(!p)return;const e=esitoTesti(p);const t=e?e[m.dataset.k]:vuotoE(m.dataset.k);if(m.textContent!==t)m.textContent=t;m.className='es'+(e?(e.ok?'':' no'):' vuoto');});
+ salvaDoc();}
+const sezione=p=>ED()&&ED().querySelector(`section[data-punto="${p.id}"]`);
+function inserisciSezione(p){const ed=ED();if(!ed)return null;if(sezione(p))return sezione(p);const s=document.createElement('section');s.dataset.punto=p.id;
+ s.innerHTML=`<p class="ph">${titoloPunto(p)}</p>`+(MAGG[p.magg].info?'':`<p class="esito-auto">${markE(p,'frase')}</p>`);
+ const succ=[...ed.querySelectorAll('section[data-punto]')].find(x=>S.odg.findIndex(o=>o.id===x.dataset.punto)>S.odg.indexOf(p));const ch=ed.querySelector('section[data-chiusura]');
+ ed.insertBefore(s,succ||ch||null);p.inserito=true;salvaDoc();return s;}
+let RANGE=null;
+document.addEventListener('selectionchange',()=>{const s=getSelection();const ed=ED();if(ed&&s.rangeCount){const r=s.getRangeAt(0);if(ed.contains(r.commonAncestorContainer))RANGE=r.cloneRange();}});
+function nelCursore(dentro){const ed=ED();return RANGE&&ed&&ed.contains(RANGE.commonAncestorContainer)&&(!dentro||dentro.contains(RANGE.commonAncestorContainer));}
+// inserisce dove c'è il cursore (se è nel punto), altrimenti prima dell'esito del punto
+function inserisciNelPunto(p,html){const ed=ED();if(!ed)return;const sec=sezione(p)||inserisciSezione(p);
+ if(nelCursore(sec)){ed.focus();const s=getSelection();s.removeAllRanges();s.addRange(RANGE);document.execCommand('insertHTML',false,html);}
+ else{const t=document.createElement('div');t.innerHTML=html;const ref=sec.querySelector('p.esito-auto');[...t.childNodes].forEach(n=>sec.insertBefore(n,ref));}
+ const auto=sec.querySelector('p.esito-auto');if(auto&&[...sec.querySelectorAll('mark[data-esito]')].some(m=>!auto.contains(m)))auto.remove();
+ aggiornaEsiti();}
+function inserisciQui(html){const ed=ED();if(!ed)return;if(nelCursore()){ed.focus();const s=getSelection();s.removeAllRanges();s.addRange(RANGE);document.execCommand('insertHTML',false,html);}else ed.insertAdjacentHTML('beforeend',html);salvaDoc();}
+function ancoraPunto(sec){const m=sec.querySelectorAll('p.mov');return m.length?m[m.length-1]:sec.querySelector('p.ph');}
+function movimento(testo){const p=S.odg.find(x=>x.id===S.cur);if(!p||!ED())return;const sec=sezione(p)||inserisciSezione(p);const el=document.createElement('p');el.className='mov';el.textContent=testo;const a=ancoraPunto(sec);sec.insertBefore(el,a?a.nextSibling:sec.firstChild);salvaDoc();}
+
+// =============== RENDER ===============
+const FASI=[[1,'Convocazione'],[2,'Svolgimento'],[3,'Verbale'],[4,'Allegati']];
+let ULT=-1;
+const opt=(v,cur,l)=>`<option value="${esc(v)}" ${v==cur?'selected':''}>${esc(l??v)}</option>`;
+function upBtns(target){return `<label class="btn sm upl">+ File<input type="file" multiple accept="application/pdf,image/*" data-up="${target}"></label><label class="btn sm upl">Foto<input type="file" accept="image/*" capture="environment" data-up="${target}"></label>`;}
+function header(){const inAss=S&&DB.fase>=1&&DB.fase<=4;
+ $('#fasi').style.display=inAss?'flex':'none';
+ if(inAss)$('#fasi').innerHTML=FASI.map(([k,t])=>`<button class="${DB.fase===k?'on':''}" data-act="fase" data-arg="${k}">${k<4?`<span>${k}</span>`:''}${t}</button>`).join('');
+ $('#hdrSub').textContent=inAss?condNome(S.condId)+' · '+S.ass.tipo+' '+S.ass.esercizio:DB.fase===9?'Impostazioni':'Condomìni';
+ const h=$('#hdrQ');if(inAss){const q=quorum();h.style.display='';h.className='pill '+(q.ok?'ok':'ko');h.textContent=q.n+'/'+q.tot+' · '+f2(q.mill)+'‰ · '+(q.ok?'costituita':'non costituita');}else h.style.display='none';}
+function render(){header();
+ if(DB.fase===2&&ULT===2&&$('#left')&&ED()){const sy=window.scrollY;$('#left').innerHTML=vLeft();window.scrollTo(0,sy);aggiornaAuto();aggiornaEsiti();save();return;}
+ if(S&&(DB.fase===2||DB.fase===3)&&!S.docHtml)S.docHtml=bozzaIniziale();
+ ULT=DB.fase;const sy=window.scrollY;
+ $('#main').innerHTML=DB.fase===0||!S&&DB.fase!==9?vHome():DB.fase===1?vConv():DB.fase===2?vSvolg():DB.fase===3?vVerb():DB.fase===4?vAllegati():vImp();window.scrollTo(0,sy);
+ if(S&&(DB.fase===2||DB.fase===3)){aggiornaAuto();aggiornaEsiti();}save();}
+
+// ---------- HOME ----------
+function vHome(){const c=DB.condSel;const k=a=>(a.ass.c2.data||'9999')+(a.ass.c2.ora||'');
+ const lista=DB.assemblee.filter(a=>a.condId===c).sort((x,y)=>k(y).localeCompare(k(x)));const oggi=new Date().toISOString().slice(0,10);
+ const prossime=DB.assemblee.filter(a=>a.stato!=='svolta'&&(!a.ass.c2.data||a.ass.c2.data>=oggi)).sort((x,y)=>k(x).localeCompare(k(y)));
+ return `<div class="home">
+<section class="card col"><label class="f" style="max-width:460px">Condominio<select data-act-change="condSel">${DB.condomini.map(x=>opt(x.id,c,x.nome)).join('')}</select></label>
+<div class="row"><h2>Verbali di ${esc(condNome(c))}</h2><span class="row" style="margin-left:auto;gap:8px"><label class="btn ai upl">Importa convocazione (PDF)<input type="file" accept="application/pdf,.pdf" data-up="__conv"></label><button class="btn pri" data-act="nuova">+ Nuova assemblea</button></span></div>
+<div class="tw"><table class="g"><thead><tr><th>1ª conv.</th><th>2ª conv.</th><th>Esercizio</th><th>Descrizione</th><th>Stato</th><th></th></tr></thead><tbody>
+${lista.map(a=>`<tr><td>${dataIt(a.ass.c1.data)}</td><td>${dataIt(a.ass.c2.data)} ${esc(a.ass.c2.ora)}</td><td>${esc(a.ass.esercizio)}</td><td>${esc(a.ass.tipo)}${a.ass.numero?' · verbale n. '+esc(a.ass.numero):''}</td><td>${a.stato==='svolta'?'<span class="badge">svolta</span>':'<span class="badge" style="background:#DBEAFE;color:#1E3A8A">da fare</span>'}</td><td class="n"><button class="btn sm" data-act="apri" data-arg="${a.id}">Apri</button></td></tr>`).join('')||'<tr><td colspan="6" class="muted">Nessuna assemblea per questo condominio.</td></tr>'}
+</tbody></table></div></section>
+<section class="card col"><h2>Planning prossime assemblee</h2><span class="muted">Tutti i condomìni, in ordine di 2ª convocazione. Una 2ª convocazione a meno di ${DB.imp.durata} ore da un'altra viene bloccata.</span>
+${prossime.map(a=>{const cf=conflitto(a.id,a.ass.c2.data,a.ass.c2.ora);return `<div class="row" style="border-top:1px solid #EDF0F4;padding-top:8px;justify-content:space-between"><div><strong>${a.ass.c2.data?giornoLungo(a.ass.c2.data)+(a.ass.c2.ora?' · ore '+esc(a.ass.c2.ora):''):'2ª convocazione da fissare'}</strong><br><span class="muted">${esc(condNome(a.condId))} · ${esc(a.ass.tipo)} ${esc(a.ass.esercizio)}</span>${cf?`<br><span class="ko" style="font-size:13px;font-weight:600">Sovrapposta a ${esc(condNome(cf.condId))}</span>`:''}</div><button class="btn sm" data-act="apri" data-arg="${a.id}">Apri</button></div>`;}).join('')||'<span class="muted">Nessuna assemblea in programma.</span>'}
+</section></div>`;}
+
+// ---------- 1 CONVOCAZIONE ----------
+function vConv(){const a=S.ass;
+ const conv=(k,l)=>`<div class="row" style="align-items:flex-end"><span class="badge" style="min-width:40px;text-align:center;padding:8px">${l}</span>
+<label class="f">Data<input type="date" data-bind="ass.${k}.data" value="${esc(a[k].data)}"></label><label class="f">Ora<input type="time" data-bind="ass.${k}.ora" value="${esc(a[k].ora)}"></label>
+<label class="f" style="flex:1;min-width:240px">Luogo<input type="text" data-bind="ass.${k}.luogo" value="${esc(a[k].luogo)}"></label><label class="chk"><input type="checkbox" data-bind="ass.${k}.agenda" ${a[k].agenda?'checked':''}> In agenda</label></div>`;
+ return `<div class="col" style="gap:14px">
+<section class="card col"><div class="row"><h2>Dati generali</h2><label class="btn ai upl" style="margin-left:auto">Importa convocazione (PDF)<input type="file" accept="application/pdf,.pdf" data-up="__conv"></label></div>
+<div class="row" style="align-items:flex-end"><div class="seg">${['Ordinaria','Straordinaria'].map(t=>`<button class="P ${a.tipo===t?'on':''}" data-act="tipo" data-arg="${t}">${t}</button>`).join('')}</div>
+<label class="f" style="width:130px">Esercizio<input type="text" data-bind="ass.esercizio" value="${esc(a.esercizio)}"></label><label class="f" style="width:110px">N. verbale<input type="text" data-bind="ass.numero" value="${esc(a.numero)}"></label>
+<label class="f" style="min-width:220px">Tabella di proprietà<select data-bind="ass.tab">${S.tabelle.map(t=>opt(t.id,a.tab,'TABELLA '+t.id+' "'+t.nome+'"')).join('')}</select></label>
+<label class="f" style="width:150px">Rendiconto al<input type="text" data-bind="ass.dataRend" value="${esc(a.dataRend)}" placeholder="30/9/2026"></label></div>
+<label class="chk"><input type="checkbox" data-bind="ass.video" ${a.video?'checked':''}> Anche in videoconferenza</label></section>
+<section class="card col"><h2>Luogo e data</h2>${conv('c1','1ª')}${conv('c2','2ª')}<span class="muted">Se la 2ª convocazione cade a meno di ${DB.imp.durata} ore da quella di un'altra assemblea, la data viene rifiutata.</span></section>
+<section class="card col"><div class="row"><h2>Ordine del giorno</h2>${S.storico.length?`<button class="btn" data-act="copiaDa">Copia da un'assemblea precedente</button>`:''}<button class="btn pri" data-act="addP" style="margin-left:auto">+ Aggiungi punto</button></div>
+${S.odg.map((p,i)=>`<div class="odgrow"><div class="col" style="align-items:center;gap:6px"><strong style="font-size:18px;color:#1D4ED8">${i+1}</strong>
+<button class="btn sm" data-act="mv" data-arg="${i}|-1" aria-label="Sposta su" ${i?'':'disabled'}>↑</button><button class="btn sm" data-act="mv" data-arg="${i}|1" aria-label="Sposta giù" ${i<S.odg.length-1?'':'disabled'}>↓</button></div>
+<div class="col"><input type="text" data-bind="odg.${i}.titolo" value="${esc(p.titolo)}" style="font-weight:600">
+<div class="row" style="align-items:flex-end">
+<label class="f">Tabella<select data-bind="odg.${i}.tab">${opt('',p.tab,'come assemblea ('+a.tab+')')}${S.tabelle.map(t=>opt(t.id,p.tab,t.id+' '+t.nome)).join('')}</select></label>
+<label class="f" style="flex:1;min-width:250px">Maggioranza<select data-bind="odg.${i}.magg">${Object.entries(MAGG).map(([k,m])=>opt(k,p.magg,m.nome)).join('')}</select></label>
+<label class="f">Vota<select data-bind="odg.${i}.chi">${Object.entries(CHI).map(([k,v])=>opt(k,p.chi,v)).join('')}</select></label>
+<button class="btn ai sm" data-act="sugg" data-arg="${i}">Suggerisci con Claude</button><button class="btn sm" data-act="delP" data-arg="${i}" ${p.chiuso?'disabled':''}>Togli</button></div>
+<label class="f">Note <span class="muted">(es. l'introduzione che sai già che farai: la ritrovi nel punto, pronta da inserire)</span><textarea rows="2" data-bind="odg.${i}.note">${esc(p.note)}</textarea></label>
+<div class="aiout" id="sug-${i}" style="display:none"></div></div></div>`).join('')||'<span class="muted">Nessun punto. Aggiungine uno o copia l\'ordine del giorno da un\'assemblea precedente.</span>'}</section>
+<details class="card"><summary>Convocati e millesimi (tabella ${esc(a.tab)})</summary>${vConvocati()}</details>
+<div class="row"><button class="btn pri" data-act="fase" data-arg="2">Vai allo svolgimento →</button></div></div>`;}
+
+// ---------- 2 SVOLGIMENTO ----------
+function vLeft(){const sv=S.sv;const p=S.odg.find(x=>x.id===sv);
+ const nav=`<div class="subnav"><button class="${sv==='app'?'on':''}" data-act="sv" data-arg="app">Appello</button>${S.odg.map((x,i)=>{const c=x.chiuso&&x.snap;return `<button class="${sv===x.id?'on':''}" data-act="sv" data-arg="${x.id}">Punto ${i+1}${c?`<span class="d ${c.info||c.ok?'ok':'ko'}">${c.info||c.ok?'✓':'✗'}</span>`:''}</button>`;}).join('')}<button class="${sv==='fine'?'on':''}" data-act="sv" data-arg="fine">Chiusura</button></div>`;
+ return nav+(sv==='app'?vAppello():sv==='fine'?vChiusura():p?vPunto(p):vAppello());}
+function vSvolg(){return `<div class="svolg"><div class="col" id="left">${vLeft()}</div><div class="docwrap">${vEditor()}</div></div>`;}
+function vEditor(){const cmd=(c,l,t)=>`<button class="tbb" data-cmd="${c}" title="${t}" aria-label="${t}">${l}</button>`;
+ return `<div class="tb">${cmd('bold','<b>G</b>','Grassetto')}${cmd('italic','<i>C</i>','Corsivo')}${cmd('underline','<u>S</u>','Sottolineato')}<span class="sep"></span>
+${cmd('insertUnorderedList','•','Elenco puntato')}${cmd('insertOrderedList','1.','Elenco numerato')}<span class="sep"></span>
+${cmd('justifyLeft','⯇','Allinea a sinistra')}${cmd('justifyCenter','≡','Centra')}${cmd('justifyRight','⯈','Allinea a destra')}<span class="sep"></span>
+${cmd('undo','↶','Annulla')}${cmd('redo','↷','Ripeti')}<span class="sep"></span>
+<button class="tbb w" data-act="insOra">Ora</button><button class="tbb w" data-act="aggPres">Aggiorna presenti</button><button class="tbb w" data-act="nuovaBozza">Ricomincia</button></div>
+<div class="doc" id="editor" contenteditable="true" spellcheck="true">${S.docHtml}</div>
+<div class="muted" style="margin-top:6px">Scrivi liberamente come in Word. Le parti <mark class="es">evidenziate</mark> sono gli esiti delle votazioni: li compila il programma.</div>`;}
+function vPunto(p){const i=S.odg.indexOf(p);const c=p.chiuso&&p.snap?p.snap:calc(p);const live=calc(p);const info=!!MAGG[p.magg].info;const dis=p.chiuso?'disabled':'';const tab=tabDi(p);
+ const lett=S.allegati.map((x,k)=>x.punti.includes(p.id)?`<div class="row"><span class="lett">${LET(k)}</span>${esc(x.titolo)} <span class="muted">${x.files.length} file</span></div>`:'').join('');
+ return `<section class="card col"><h2>Punto ${i+1}° – ${esc(p.titolo)}</h2>
+<div class="row" style="gap:6px"><span class="badge">Tab. ${esc(tab)}</span><span class="badge">${esc(MAGG[p.magg].nome)}</span><span class="badge">Vota: ${esc(CHI[p.chi])}</span></div></section>
+<section class="card col"><h3>Discussione</h3>
+<div class="row"><button class="mic ${DICT.live?'live':''}" data-act="mic" aria-label="Dettatura" id="micBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><span class="muted" id="micState">${DICT.live?'Ascolto… tocca per fermare':'Tocca il microfono per dettare'}</span></div>
+<div class="muted" id="partial" style="font-style:italic;min-height:16px"></div>
+<label class="f">Appunti<textarea rows="6" id="appunti" data-bind="odg.${i}.appunti" placeholder="Scrivi o detta qui gli interventi">${esc(p.appunti)}</textarea></label>
+<div class="row"><button class="btn" data-act="insAppunti" data-arg="${i}">Inserisci gli appunti nel verbale</button><button class="btn ai" data-act="bozza" data-arg="${i}">Riscrivi gli appunti con Claude</button></div>
+<div class="aiout" id="aiOut" style="display:none"></div>
+${p.note?`<div class="nota"><div class="muted">Note preparate in convocazione</div><div style="white-space:pre-wrap;font-size:14px">${esc(p.note)}</div><button class="btn sm" data-act="insNote" data-arg="${i}" style="margin-top:6px">Inserisci nel verbale</button></div>`:''}
+<label class="f">Frasario<select data-ins="frase" data-arg="${i}"><option value="">Scegli la frase da inserire nel verbale…</option>${Object.entries(S.frasi).map(([k,f])=>`<option value="${k}">${esc(f.nome)}</option>`).join('')}</select></label>
+<span class="muted">Appunti, note e frasi vanno nel verbale dove hai il cursore dentro questo punto; altrimenti subito prima dell'esito.</span></section>
+${info?'<div class="card muted">Punto senza votazione.</div>':`<section class="col"><div class="row"><h3 style="margin-right:auto">Votazione</h3><button class="btn" data-act="tutti" data-arg="F" ${dis}>Tutti favorevoli</button><button class="btn" data-act="tutti" data-arg="" ${dis}>Azzera</button></div>
+<div class="tw"><table class="g"><thead><tr><th>Votante</th><th class="n">Mill. ${esc(tab)}</th><th>Voto</th></tr></thead><tbody>
+${(p.chiuso?c.rows:live.rows).map(r=>{const can=r.pr.in&&!r.escl;return `<tr style="${can?'':'opacity:.55'}"><td><strong>${esc(nm(r.pid))}</strong><div class="muted">${esc(r.un.join(' + '))}${r.pr.modo==='delega'?' · delega a '+esc(r.pr.del):r.pr.modo==='video'?' · video':''}${!r.pr.in?' · assente':''}</div>
+${r.pr.in?`<label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-act-change="escl" data-arg="${r.pid}" ${r.escl?'checked':''} ${dis}> non vota (conflitto d'interessi)</label>`:''}</td>
+<td class="n">${f2(r.mill)}</td><td>${can?`<div class="seg">${[['F','Fav.'],['C','Contr.'],['X','Ast.']].map(([k,t])=>`<button class="${k} ${r.v===k?'on':''}" data-act="voto" data-arg="${r.pid}|${k}" ${dis}>${t}</button>`).join('')}</div>`:'<span class="muted">non vota</span>'}</td></tr>`;}).join('')}</tbody></table></div>
+<div class="esito ${c.nv.length&&!p.chiuso?'nd':c.ok?'ok':'ko'}"><div><span class="muted">Esito</span><br><big class="${c.nv.length&&!p.chiuso?'':c.ok?'ok':'ko'}">${c.nv.length&&!p.chiuso?'Votazione in corso':c.ok?'Approvata':'Non approvata'}</big></div>
+<div style="font-size:14px;line-height:1.6">Fav. <strong>${c.F.n}</strong> · ${f2(c.F.m)} — Contr. ${c.C.n} · ${f2(c.C.m)} — Ast. ${c.X.n} · ${f2(c.X.m)}<br>Intervenuti con voto ${c.iv.length}/${c.parts.length}${c.nv.length?' · <span class="warn">'+c.nv.length+' senza voto</span>':' · l\'esito è già nel verbale'} · Serve: ${esc(c.req)}</div></div></section>`}
+<section class="card col"><div class="row"><h3>Allegati del punto</h3><span class="row" style="margin-left:auto;gap:6px">${upBtns('N|'+p.id)}</span></div>${lett||'<span class="muted">Nessuno. Anche dalla sezione Allegati.</span>'}</section>
+<div class="row">${p.chiuso?`<button class="btn" data-act="riapri" data-arg="${i}">Riapri il punto</button>`:`<button class="btn pri" data-act="chiudi" data-arg="${i}" ${!info&&live.nv.length?'disabled':''}>Chiudi punto ${i<S.odg.length-1?'e passa al '+(i+2):'e vai alla chiusura'} →</button>`}</div>`;}
+
+// ---------- 3 VERBALE ----------
+function vVerb(){return `<div class="svolg" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)"><div class="col">${vEditor()}</div>
+<aside class="col"><section class="card col"><h2>Due documenti</h2>
+<button class="btn" data-act="pdf" data-arg="firma">PDF da stampare e firmare in assemblea</button>
+<label class="chk"><input type="checkbox" data-bind="ass.firmaFoglio" ${S.ass.firmaFoglio?'checked':''}> aggiungi un foglio firme dei presenti</label>
+<button class="btn pri" data-act="pdf" data-arg="fascicolo">Fascicolo per i condòmini (verbale + allegati)</button>
+<span class="muted">Il fascicolo chiude con "FEDELMENTE TRASCRITTO – L'AMMINISTRATORE" e la firma, poi ogni allegato con il frontespizio "ALLEGATO A, B…".</span>
+<div class="row"><label class="btn sm upl">${DB.firma?'Cambia immagine firma':'Carica immagine firma'}<input type="file" accept="image/*" data-up="__firma"></label>${DB.firma?'<span class="ok" style="font-size:13px;font-weight:600">firma caricata</span><button class="btn sm" data-act="delFirma">Togli</button>':''}</div></section>
+<section class="card col"><h2>Controlli</h2>${controlli().map(x=>`<div style="font-size:14px"><strong class="${x[0]?'ok':'warn'}">${x[0]?'✓':'!'}</strong> ${esc(x[1])}</div>`).join('')}</section>
+<section class="card col"><div class="row"><h2>Rilettura</h2><button class="btn ai sm" data-act="rivedi" style="margin-left:auto">Rileggi con Claude</button><button class="btn sm" data-act="copia">Copia testo</button></div><div class="aiout" id="revOut">Claude segnala refusi e incoerenze, senza cambiare il testo.</div></section></aside></div>`;}
+
+// ---------- ALLEGATI ----------
+function vAllegato(x){const k=S.allegati.indexOf(x);return `<div class="odgrow" style="grid-template-columns:44px minmax(0,1fr)"><span class="lett" style="height:36px;font-size:16px">${LET(k)}</span>
+<div class="col"><div class="row"><input type="text" data-bind="allegati.${k}.titolo" data-rv="1" value="${esc(x.titolo)}" style="flex:1;min-width:240px"><button class="btn sm" data-act="delA" data-arg="${x.id}">Togli</button></div>
+<div class="row" style="gap:10px"><span class="muted">Richiamato nei punti:</span>${S.odg.map((p,i)=>`<label class="chk"><input type="checkbox" data-act-change="aPunto" data-arg="${k}|${p.id}" ${x.punti.includes(p.id)?'checked':''}> ${i+1}</label>`).join('')}
+${x.fase==='assemblea'?`<input type="text" placeholder="consegnato in assemblea da…" data-bind="allegati.${k}.da" data-rv="1" value="${esc(x.da)}" style="width:220px">`:''}</div>
+<div class="row">${upBtns('A|'+x.id)}<span class="muted">${x.files.length?x.files.length+' file':'nessun file (nel fascicolo comparirà solo il frontespizio)'}</span></div>
+${x.files.length?`<div class="files">${x.files.map(f=>`<div class="file">${f.tipo==='pdf'?'PDF':'Foto'} · ${esc(f.nome)} <span class="muted">${f.pag?f.pag+' pag. · ':''}${Math.round(f.size/1024)} KB</span>${f.tipo==='img'?`<button class="btn sm" data-act="vedi" data-arg="${f.id}">Vedi</button>`:''}<button class="btn sm" data-act="delF" data-arg="${x.id}|${f.id}" style="margin-left:auto">Togli</button></div>`).join('')}</div>`:''}</div></div>`;}
+function vAllegati(){const blocco=(titolo,pid,lista)=>`<section class="card col"><div class="row"><h2>${titolo}</h2><span class="row" style="margin-left:auto;gap:6px">${upBtns(pid?'N|'+pid:'G')}<button class="btn sm" data-act="addA" data-arg="${pid||''}">+ Senza file</button></span></div>${lista.length?lista.map(vAllegato).join(''):'<span class="muted">Nessun allegato.</span>'}</section>`;
+ return `<div class="col" style="gap:14px"><div class="card muted">Premi il pulsante del punto e allega: si crea un allegato a lettera (A, B, C…). Ogni allegato può essere richiamato anche in altri punti spuntando i numeri.</div>
+${S.odg.map((p,i)=>blocco(`Punto ${i+1} – ${esc(p.titolo)}`,p.id,S.allegati.filter(x=>x.punti.includes(p.id)))).join('')}
+${blocco('Allegati generali (non legati a un punto)','',S.allegati.filter(x=>!x.punti.length))}</div>`;}
+
+// ---------- IMPOSTAZIONI ----------
+function vFrasario(){return `<div class="col" style="margin-top:10px">
+<div class="aiout" style="white-space:normal">Scrivi i testi come devono comparire nel verbale. Tra parentesi quadre i soli campi che compila il programma: <b>[esito]</b> («all'unanimità dei presenti» oppure favorevoli, contrari e astenuti), <b>[esito frase]</b> («L'Assemblea approva …»), <b>[allegato]</b> (la lettera dell'allegato del punto), <b>[data rendiconto]</b>.</div>
+${Object.entries(DB.frasi).map(([k,f])=>`<div class="card col" style="padding:12px"><div class="row"><input type="text" data-bind="DB.frasi.${k}.nome" value="${esc(f.nome)}" style="font-weight:600;flex:1"><button class="btn sm" data-act="delFrase" data-arg="${k}">Elimina</button></div><textarea rows="${Math.min(10,Math.max(3,Math.ceil(f.testo.length/110)+1))}" data-bind="DB.frasi.${k}.testo">${esc(f.testo)}</textarea></div>`).join('')}
+<div class="row"><button class="btn" data-act="addFrase">+ Nuova frase</button></div></div>`;}
+function vRip(){const r=DB.rip;const C=DB.condomini.find(c=>c.id===r.cond)||DB.condomini[0];const tab=C.tabelle.find(t=>t.id===r.tab)?r.tab:'A';const tot=C.unita.reduce((s,u)=>s+(+u.mill[tab]||0),0);
+ const imp=+String(r.importo).replace(/\./g,'').replace(',','.')||0;
+ return `<div class="col" style="margin-top:10px"><div class="row" style="align-items:flex-end"><label class="f">Condominio<select data-bind="DB.rip.cond">${DB.condomini.map(c=>opt(c.id,C.id,c.nome)).join('')}</select></label>
+<label class="f">Tabella<select data-bind="DB.rip.tab">${C.tabelle.map(t=>opt(t.id,tab,t.id+' '+t.nome)).join('')}</select></label>
+<label class="f">Importo (€)<input type="text" inputmode="decimal" data-bind="DB.rip.importo" data-rer="1" value="${esc(r.importo)}" placeholder="es. 86400"></label></div>
+${imp?`<div class="tw"><table class="g"><thead><tr><th>Unità</th><th>Intestatario</th><th class="n">Mill.</th><th class="n">Quota €</th></tr></thead><tbody>${C.unita.filter(u=>+u.mill[tab]>0).map(u=>`<tr><td>${esc(u.nome)}</td><td>${esc(C.persone[u.rapp]||'')}</td><td class="n">${f2(+u.mill[tab])}</td><td class="n">${f2(imp*u.mill[tab]/tot)}</td></tr>`).join('')}</tbody></table></div>`:'<span class="muted">Scrivi un importo per vedere la quota di ogni unità.</span>'}</div>`;}
+function vImp(){return `<div class="col" style="gap:14px"><div class="row"><h2 style="font-size:20px">Impostazioni</h2><button class="btn" data-act="torna" style="margin-left:auto">← Torna</button></div>
+<section class="card col"><h2>Generali</h2><div class="row"><label class="f" style="min-width:300px">Firma dell'amministratore (verbale di prima convocazione deserta)<input type="text" data-bind="DB.amm.firma" value="${esc(DB.amm.firma)}"></label>
+<label class="f" style="width:260px">Distanza minima tra due 2ª convocazioni (ore)<input type="number" min="0" step="0.5" data-bind="DB.imp.durata" value="${esc(DB.imp.durata)}"></label></div></section>
+<details class="card" open><summary>Frasario</summary>${vFrasario()}</details>
+<details class="card"><summary>Ripartizione virtuale</summary>${vRip()}</details>
+<details class="card"><summary>Dati di prova</summary><div class="row" style="margin-top:8px"><button class="btn" data-act="reset">Ricarica i dati di esempio</button><span class="muted">Cancella le prove fatte e riparte dall'esempio.</span></div></details></div>`;}
+function vConvocati(){const tab=S.ass.tab;return `<div class="col" style="margin-top:10px">
+<div class="row">${S.tabelle.map(t=>{const v=tabTot(t.id);return `<span class="badge" style="padding:6px 10px">${t.id} ${esc(t.nome)}: ${f2(v)} <span class="${Math.abs(v-1000)<0.01?'ok':'ko'}">${Math.abs(v-1000)<0.01?'quadra':'non quadra'}</span></span>`;}).join('')}</div>
+<div class="tw"><table class="g"><thead><tr><th>Unità</th><th>Intestatari</th><th class="n">Mill. ${tab}</th><th>Rappresentante</th><th>Vota ord.</th><th>Vota straord.</th></tr></thead><tbody>
+${S.unita.map((u,i)=>{const pr=u.tit.filter(t=>t.r==='prop'||t.r==='nudo');return `<tr><td><strong>${esc(u.nome)}</strong></td><td>${u.tit.map(t=>esc(nm(t.p))+(t.r!=='prop'?' <span class="badge">'+RUOLO[t.r]+'</span>':'')).join('<br>')}</td><td class="n">${+u.mill[tab]?f2(+u.mill[tab]):'—'}</td>
+<td>${pr.length>1?`<select data-bind="unita.${i}.rapp" data-rer="1">${pr.map(t=>opt(t.p,u.rapp,nm(t.p))).join('')}</select>`:'—'}</td><td>${esc(nm(votante(u,'ord')))}</td><td>${esc(nm(votante(u,'str')))}</td></tr>`;}).join('')}
+</tbody></table></div><span class="muted">I millesimi arriveranno dall'importazione dei fogli Excel di Danea (uno per condominio) in un unico foglio controllato.</span></div>`;}
+function vAppello(){const q=quorum();const a=S.ass;
+ const ruoli={};S.unita.forEach(u=>u.tit.forEach(t=>{const v=[];['ord','str','cond'].forEach(c=>{if(votante(u,c)===t.p)v.push(c)});if(v.length)(ruoli[t.p]=ruoli[t.p]||[]).push({u:u.nome,r:t.r,v});}));
+ const lista=Object.keys(ruoli).sort((x,y)=>nm(x).localeCompare(nm(y)));const partT=Object.fromEntries(q.parts.map(x=>[x.pid,x]));
+ const presenti=lista.filter(p=>['P','V'].includes((S.pres[p]||{}).st));
+ const delCount={};lista.forEach(p=>{const r=S.pres[p];if(r&&r.st==='D'){const k=delNome(r);if(k){(delCount[k]=delCount[k]||{n:0,m:0});delCount[k].n++;delCount[k].m+=(partT[p]||{mill:0}).mill;}}});
+ const over=q.tot>20?Object.entries(delCount).filter(([d,c])=>c.n>q.tot/5||c.m>q.totM/5):[];
+ return `<section class="card col"><div class="row"><h2>Appello</h2><button class="btn sm" data-act="oraApp" style="margin-left:auto">Fatto l'appello ora${a.oraAppello?' ('+a.oraAppello+')':''}</button></div>
+<div class="row"><label class="f" style="flex:1">Presidente<input type="text" list="dlPres" data-bind="ass.presidente" data-rv="1" value="${esc(a.presidente)}"></label><datalist id="dlPres">${[...presenti.map(nm),...Object.keys(delCount)].map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+<label class="f" style="flex:1">Segretario<input type="text" data-bind="ass.segretario" data-rv="1" value="${esc(a.segretario)}"></label></div>
+<div class="row" style="gap:18px"><div><span class="muted">Intervenuti</span><br><strong style="font-size:21px">${q.n}/${q.tot}</strong></div><div><span class="muted">Millesimi</span><br><strong style="font-size:21px">${f2(q.mill)}</strong></div>
+<div class="muted" style="line-height:1.6">1ª conv. (metà teste + 2/3): <strong class="${q.c1?'ok':'ko'}">${q.c1?'sì':'no'}</strong><br>2ª conv. (1/3 teste + 1/3): <strong class="${q.c2?'ok':'ko'}">${q.c2?'sì':'no'}</strong></div>
+<div class="muted">${q.tot>20?(over.length?'<span class="ko">Deleghe oltre 1/5: '+over.map(([d])=>esc(d)).join(', ')+'</span>':'Limite deleghe 1/5 rispettato'):'Limite deleghe 1/5: non si applica (≤ 20 condòmini)'}</div></div>
+<div class="row"><button class="btn sm" data-act="tuttiAss">Tutti assenti</button><span class="muted">Tocca lo stato di ognuno. Delega: scegli un presente o scrivi il nome di chi non è condomino.</span></div></section>
+<div class="tw"><table class="g"><thead><tr><th>Avente diritto</th><th class="n">Mill.</th><th>Presenza</th><th>Delega / orari</th></tr></thead><tbody>
+${lista.map(p=>{const r=S.pres[p]||{st:'A'};const st=r.st||'A';const pr=presenza(p);
+ const info=ruoli[p].map(x=>x.u+(x.r!=='prop'?' ('+RUOLO[x.r]+')':'')+(x.v.includes('ord')?'':x.v.includes('str')?' – vota solo straordinaria':' – vota solo riscaldamento')).join(', ');
+ return `<tr><td><strong>${esc(nm(p))}</strong><div class="muted">${esc(info)}</div></td><td class="n">${partT[p]?f2(partT[p].mill):'—'}</td>
+<td><div class="seg">${[['P','Presente'],['V','Video'],['D','Delega'],['A','Assente']].map(([k,t])=>`<button class="${k} ${st===k?'on':''}" data-act="pres" data-arg="${p}|${k}">${t}</button>`).join('')}${st==='U'?'<button class="U on">Uscito</button>':''}</div></td>
+<td>${st==='D'?`<div class="col" style="gap:4px"><select data-act-change="delega" data-arg="${p}"><option value="">— delegato presente —</option>${presenti.filter(x=>x!==p).map(x=>opt(x,r.del,nm(x))).join('')}<option value="__altro" ${!r.del&&r.delNome!=null?'selected':''}>altra persona…</option></select>
+${!r.del&&r.delNome!=null?`<input type="text" placeholder="nome del delegato" data-bind="pres.${p}.delNome" data-rv="1" data-rq="1" value="${esc(r.delNome)}">`:''}${pr.warn?`<span class="warn">${pr.warn}</span>`:''}</div>`:''}
+${st==='P'||st==='V'?`<span class="muted">entrato ${esc(r.in||'')}</span> <button class="btn sm" data-act="esce" data-arg="${p}">Esce</button>`:''}
+${st==='U'?`<span class="muted">uscito ${esc(r.out||'')}</span> <button class="btn sm" data-act="rientra" data-arg="${p}">Rientra</button>`:''}</td></tr>`;}).join('')}</tbody></table></div>
+<button class="btn pri" data-act="sv" data-arg="${(S.odg[0]||{}).id||'fine'}">Apri il punto 1 →</button>`;}
+function vChiusura(){const a=S.ass;return `<section class="card col"><h2>Chiusura</h2>
+<div class="row"><label class="f">Ora di chiusura<input type="time" data-bind="ass.chiusura" value="${esc(a.chiusura)}"></label><button class="btn" data-act="oraChiusura" style="align-self:flex-end">Adesso</button></div>
+<button class="btn pri" data-act="insChiusura">Inserisci chiusura, firme ed elenco allegati nel verbale</button>
+${controlli().map(x=>`<div style="font-size:14px"><strong class="${x[0]?'ok':'warn'}">${x[0]?'✓':'!'}</strong> ${esc(x[1])}</div>`).join('')}
+<button class="btn" data-act="fase" data-arg="3">Vai al verbale →</button></section>`;}
+function controlli(){const o=[],q=quorum(),a=S.ass;o.push([q.ok,'Numero legale '+(q.ok?'raggiunto':'non raggiunto')]);o.push([!!a.presidente,'Presidente '+(a.presidente?'indicato':'da indicare')]);o.push([!!a.oraAppello,"Ora dell'appello "+(a.oraAppello?'indicata':'da indicare')]);
+ S.odg.forEach((p,i)=>{if(!p.chiuso)o.push([false,'Punto '+(i+1)+' non chiuso']);});o.push([!!a.chiusura,'Ora di chiusura '+(a.chiusura?'indicata':'da indicare')]);
+ S.allegati.forEach((x,k)=>{if(!x.files.length)o.push([false,'Allegato '+LET(k)+' senza file']);if(!x.punti.length)o.push([false,'Allegato '+LET(k)+' non richiamato in nessun punto']);});
+ const d=S.docHtml||'';if(/\[esito|___/.test(d.replace(/<[^>]+>/g,'')))o.push([false,'Nel verbale ci sono campi da completare ([esito] o ___)']);if(d&&!/data-chiusura/.test(d))o.push([false,'Chiusura non ancora inserita nel verbale']);return o;}
+
+// =============== ALLEGATI: file ===============
+const BLOBS={};let IDB=null;
+(function(){try{const r=indexedDB.open('verbaliAll4',1);r.onupgradeneeded=()=>r.result.createObjectStore('f');r.onsuccess=()=>{IDB=r.result};}catch(e){}})();
+function idbPut(id,b){try{IDB&&IDB.transaction('f','readwrite').objectStore('f').put(b,id);}catch(e){}}
+function idbDel(id){try{IDB&&IDB.transaction('f','readwrite').objectStore('f').delete(id);}catch(e){}}
+function idbGet(id){return new Promise(res=>{try{if(!IDB)return res(null);const r=IDB.transaction('f').objectStore('f').get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null);}catch(e){res(null)}});}
+async function getBlob(id){return BLOBS[id]||(BLOBS[id]=await idbGet(id));}
+async function riduci(file){const bmp=await createImageBitmap(file);const r=Math.min(1,2000/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*r);c.height=Math.round(bmp.height*r);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return await new Promise(res=>c.toBlob(res,'image/jpeg',0.82));}
+async function caricaFile(files,target){
+ let al;
+ if(target.startsWith('A|'))al=S.allegati.find(x=>x.id===target.slice(2));
+ else if(target.startsWith('N|')||target==='G'){const pid=target.slice(2);al={id:'g'+Date.now().toString(36),titolo:(files[0]&&files[0].name||'Documento').replace(/\.[^.]+$/,''),punti:pid?[pid]:[],fase:S.ass.oraAppello?'assemblea':'convocazione',da:'',files:[]};S.allegati.push(al);}
+ if(!al)return;
+ for(const f of files){const id='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);let blob=f,tipo='pdf',pag=0;
+  if(f.type.startsWith('image/')){tipo='img';try{blob=await riduci(f);}catch(e){}}
+  else if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){try{pag=(await PDFLib.PDFDocument.load(await f.arrayBuffer(),{ignoreEncryption:true})).getPageCount();}catch(e){}}
+  else{toast('Formato non gestito: '+f.name);continue;}
+  BLOBS[id]=blob;idbPut(id,blob);al.files.push({id,nome:f.name,tipo,pag,size:blob.size});}
+ render();toast('File aggiunto all\'allegato '+LET(S.allegati.indexOf(al)));}
+
+// =============== PDF (dal verbale vivo) ===============
+async function creaPDF(mode){
+ const {PDFDocument,StandardFonts,rgb}=PDFLib;const doc=await PDFDocument.create();
+ const F=await doc.embedFont(StandardFonts.Helvetica),FB=await doc.embedFont(StandardFonts.HelveticaBold),FI=await doc.embedFont(StandardFonts.HelveticaOblique),FBI=await doc.embedFont(StandardFonts.HelveticaBoldOblique);const fnt=(b,i)=>b?(i?FBI:FB):(i?FI:F);
+ const W=595.28,H=841.89,M=56,SZ=10.5,LD=14.5;const okc={};
+ const clean=(t,f)=>[...t].map(ch=>{const k=f.name+ch;if(okc[k]===undefined){try{f.widthOfTextAtSize(ch,10);okc[k]=true}catch(e){okc[k]=false}}return okc[k]?ch:(ch===' '?' ':'?');}).join('');
+ let page,y;const pages=[];const np=()=>{page=doc.addPage([W,H]);pages.push(page);y=H-M;};np();
+ const need=h=>{if(y-h<M+16)np();};
+ function runsOf(node,bold,out,it){node.childNodes.forEach(ch=>{if(ch.nodeType===3)out.push({t:ch.textContent.replace(/\s+/g,' '),b:bold,i:it});else if(ch.nodeName==='BR')out.push({br:true});else if(ch.nodeType===1){const b=bold||/^(B|STRONG|TH|H1|H2|H3)$/.test(ch.nodeName)||/bold|[67]00/.test(ch.style&&ch.style.fontWeight||'');const i2=it||/^(I|EM)$/.test(ch.nodeName)||(ch.style&&ch.style.fontStyle==='italic');if(/^(DIV|P)$/.test(ch.nodeName)){out.push({br:true});runsOf(ch,b,out,i2);out.push({br:true});}else runsOf(ch,b,out,i2);}});return out;}
+ function lay(runs,width,size){const lines=[[]];let w=0,pend=false;const sp=F.widthOfTextAtSize(' ',size);
+  runs.forEach(r=>{if(r.br){if(lines[lines.length-1].length||lines.length>1)lines.push([]);w=0;pend=false;return;}
+   r.t.split(/(\s+)/).forEach(tok=>{if(!tok)return;if(/^\s+$/.test(tok)){pend=true;return;}const f=fnt(r.b,r.i);const t=clean(tok,f);const ww=f.widthOfTextAtSize(t,size);const cur=lines[lines.length-1];const gap=cur.length&&pend;const add=(gap?sp:0)+ww;
+    if(w+add>width&&cur.length){lines.push([{t,f,w:ww}]);w=ww;}else{cur.push({t,f,w:ww,sp:gap});w+=add;}pend=false;});});
+  while(lines.length&&!lines[lines.length-1].length)lines.pop();while(lines.length&&!lines[0].length)lines.shift();return lines;}
+ function drawLine(l,x,width,align,size,yy){const tw=l.reduce((s,s2)=>s+s2.w+(s2.sp?F.widthOfTextAtSize(' ',size):0),0);let cx=align==='c'?x+(width-tw)/2:align==='r'?x+width-tw:x;
+  l.forEach(s=>{if(s.sp)cx+=F.widthOfTextAtSize(' ',size);page.drawText(s.t,{x:cx,y:yy,size,font:s.f});cx+=s.w;});}
+ function para(el,align){const lines=lay(runsOf(el,false,[]),W-2*M,SZ);lines.forEach(l=>{need(LD);drawLine(l,M,W-2*M,align,SZ,y);y-=LD;});y-=5;}
+ function table(t){const bord=t.classList.contains('bord');const rows=[...t.querySelectorAll('tr')];if(!rows.length)return;
+  const ncol=Math.max(...rows.map(r=>r.children.length));let ws=(t.dataset.w||'').split(',').map(Number).filter(Boolean);if(ws.length!==ncol)ws=Array(ncol).fill(100/ncol);
+  const cw=ws.map(p=>p/100*(W-2*M));const sz=SZ-0.5,ld=13;
+  rows.forEach(r=>{const cells=[...r.children].map((c,i)=>({lines:lay(runsOf(c,c.nodeName==='TH',[]),cw[i]-8,sz),al:c.classList.contains('r')?'r':c.classList.contains('c')?'c':'l'}));
+   const h=Math.max(1,...cells.map(c=>c.lines.length))*ld+6;need(h);let x=M;
+   cells.forEach((c,i)=>{if(bord)page.drawRectangle({x,y:y-h+ld-2,width:cw[i],height:h,borderColor:rgb(.2,.2,.2),borderWidth:.6});let yy=y-2;c.lines.forEach(l=>{drawLine(l,x+4,cw[i]-8,c.al,sz,yy);yy-=ld;});x+=cw[i];});y-=h;});y-=6;}
+ function flow(node){[...node.childNodes].forEach(ch=>{if(ch.nodeType===3){if(ch.textContent.trim())para({childNodes:[ch]},'l');return;}if(ch.nodeType!==1)return;
+  if(ch.nodeName==='TABLE')return table(ch);if(ch.classList&&ch.classList.contains('tag'))return;
+  if(ch.nodeName==='UL'||ch.nodeName==='OL'){[...ch.children].forEach((li,k)=>{const pre=document.createElement('p');pre.innerHTML=(ch.nodeName==='OL'?(k+1)+'. ':'• ')+li.innerHTML;para(pre,'l');});return;}
+  const hasBlock=[...ch.children].some(c=>/^(P|DIV|TABLE|H1|H2|H3|UL|OL|SECTION)$/.test(c.nodeName));
+  if(hasBlock)return flow(ch);const al=(ch.style&&ch.style.textAlign)||(ch.getAttribute&&ch.getAttribute('align'))||'';para(ch,ch.classList.contains('c')||al==='center'?'c':ch.classList.contains('r')||al==='right'?'r':'l');});}
+ salvaDoc();const box=document.createElement('div');box.innerHTML=S.docHtml||bozzaIniziale();
+ if(mode==='fascicolo'){box.innerHTML+=`<p class="r"><b>FEDELMENTE TRASCRITTO</b><br><b>L'AMMINISTRATORE</b></p>`;}
+ flow(box);
+ if(mode==='fascicolo'){const fb=await getBlob('__firma');if(fb){try{const by=new Uint8Array(await fb.arrayBuffer());let im;try{im=await doc.embedPng(by)}catch(e){im=await doc.embedJpg(by)}const w=140,h=im.height*w/im.width;need(h+4);page.drawImage(im,{x:W-M-w,y:y-h,width:w,height:h});y-=h;}catch(e){}}}
+ const nv=pages.length;pages.forEach((pg,i)=>pg.drawText(clean(`${S.cond.nome} – Verbale n. ${S.ass.numero}${mode==='fascicolo'?' – copia per i condòmini':''} – pag. ${i+1} di ${nv}`,F),{x:M,y:28,size:8.5,font:F,color:rgb(.35,.35,.35)}));
+ const errori=[];
+ if(mode==='firma'&&S.ass.firmaFoglio){np();page.drawText('FOGLIO FIRME DEI PRESENTI',{x:M,y,size:13,font:FB});y-=24;const q=quorum();
+  const t=document.createElement('table');t.className='bord';t.dataset.w='38,28,12,22';t.innerHTML='<tr><th>Nominativo</th><th>Delegato</th><th class="r">Mill.</th><th>Firma</th></tr>'+q.parts.filter(x=>presenza(x.pid).in).map(x=>{const pr=presenza(x.pid);return `<tr><td>${esc(nm(x.pid))}<br> </td><td>${pr.modo==='delega'?esc(pr.del):''}</td><td class="r">${f2(x.mill)}</td><td></td></tr>`;}).join('');table(t);}
+ if(mode==='fascicolo'){for(let k=0;k<S.allegati.length;k++){const a=S.allegati[k];const pg=doc.addPage([W,H]);
+  pg.drawText('ALLEGATO '+LET(k),{x:M,y:H/2+40,size:30,font:FB});const tl=lay([{t:a.titolo,b:true}],W-2*M,15);let yy=H/2;tl.forEach(l=>{page=pg;drawLine(l,M,W-2*M,'l',15,yy);yy-=20;});
+  pg.drawText(clean(S.cond.nome+' – Verbale n. '+S.ass.numero+(a.da?' – consegnato in assemblea da '+a.da:''),F),{x:M,y:28,size:8.5,font:F,color:rgb(.35,.35,.35)});
+  for(const f of a.files){const b=await getBlob(f.id);if(!b){errori.push(f.nome+' (non trovato su questo dispositivo)');continue;}
+   try{const by=new Uint8Array(await b.arrayBuffer());if(f.tipo==='pdf'){const src=await PDFDocument.load(by,{ignoreEncryption:true});(await doc.copyPages(src,src.getPageIndices())).forEach(p=>doc.addPage(p));}
+    else{let im;try{im=await doc.embedJpg(by)}catch(e){im=await doc.embedPng(by)}const p2=doc.addPage([W,H]);const s=Math.min((W-60)/im.width,(H-60)/im.height);p2.drawImage(im,{x:(W-im.width*s)/2,y:(H-im.height*s)/2,width:im.width*s,height:im.height*s});}}
+   catch(e){errori.push(f.nome+' (non incorporabile)');}}}}
+ return{bytes:await doc.save(),errori,pagine:doc.getPageCount()};}
+
+// =============== CLAUDE + DETTATURA + DOWNLOAD ===============
+let SAMPLE=null,DICTNS=null,DL=null;const DICT={live:false};const SUG={};
+(async()=>{try{SAMPLE=await window.claude?.use?.('sample');}catch(e){}})();
+(async()=>{try{DL=await window.claude?.use?.('downloads');}catch(e){}})();
+(async()=>{try{DICTNS=await window.claude?.use?.('dictation');if(DICTNS){DICTNS.onPartial(({text})=>{const e=$('#partial');if(e)e.textContent=text;});
+ DICTNS.onFinal(({text})=>{const p=S.odg.find(x=>x.id===S.sv);if(!p)return;p.appunti=(p.appunti?p.appunti.trim()+' ':'')+text;const a=$('#appunti');if(a)a.value=p.appunti;const e=$('#partial');if(e)e.textContent='';save();});
+ DICTNS.onState(({state})=>{DICT.live=state==='listening';const b=$('#micBtn');if(b)b.classList.toggle('live',DICT.live);const s=$('#micState');if(s)s.textContent=DICT.live?'Ascolto… tocca per fermare':'Detta o scrivi gli interventi';});}}catch(e){}})();
+async function askClaude(prompt,out,opts={}){if(!SAMPLE){out.textContent='Claude non è disponibile in questa vista. Nella versione vera: Claude con passaggio automatico a Gemini.';return null;}
+ out.textContent='Claude sta scrivendo…';try{const r=await SAMPLE(prompt,{onText:({text})=>{out.textContent=text;},cache:false,...opts});out.textContent=r.text;return r.text;}
+ catch(e){out.textContent=e&&e.code==='not_granted'?'Accesso a Claude non concesso.':e&&e.code==='rate_limited'?'Troppe richieste, riprova tra poco.':'Errore: '+(e&&e.message||e);return null;}}
+const REGOLE="Regole: italiano formale da verbale di assemblea condominiale, terza persona, frasi brevi. Riporta chi interviene e la sostanza; riporta tra virgolette le richieste esplicite di verbalizzazione. Non inventare fatti, nomi, importi o date assenti dagli appunti. NON scrivere esito, voti o millesimi: li aggiunge il programma. Solo il testo, senza titoli.";
+
+// =============== IMPORTA CONVOCAZIONE ===============
+let IMP=null;
+async function leggiPdf(file){const buf=new Uint8Array(await file.arrayBuffer());let testo='',immagini=[];
+ if(!window.pdfjsLib)throw new Error('lettore PDF non caricato');
+ const pdf=await pdfjsLib.getDocument({data:buf,isEvalSupported:false}).promise;
+ for(let i=1;i<=Math.min(pdf.numPages,6);i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();let riga='';let lastY=null;
+  tc.items.forEach(it=>{const y=Math.round(it.transform[5]);if(lastY!==null&&Math.abs(y-lastY)>2)riga+='\n';else if(riga&&!riga.endsWith(' ')&&!riga.endsWith('\n'))riga+=' ';riga+=it.str;lastY=y;});testo+=riga+'\n\n';}
+ if(testo.replace(/\s/g,'').length<80){// PDF scansionato: passo le immagini delle pagine
+  for(let i=1;i<=Math.min(pdf.numPages,3);i++){const pg=await pdf.getPage(i);const vp=pg.getViewport({scale:1.6});const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;immagini.push(await new Promise(r=>c.toBlob(r,'image/jpeg',0.85)));}}
+ return{testo,immagini,file};}
+function trovaCond(nome){const norm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/condominio|via|viale|piazza|p\.za|n\.|civico/g,' ').replace(/[^a-z0-9]+/g,' ').trim().split(' ').filter(x=>x.length>1);
+ const t=norm(nome);let best=null,bs=0;DB.condomini.forEach(c=>{const k=norm(c.nome);const sc=k.filter(x=>t.includes(x)).length/Math.max(1,k.length);if(sc>bs){bs=sc;best=c;}});return bs>=0.5?best:null;}
+async function importaConv(file){dlg(`<h2>Importa convocazione</h2><p id="impStato">Leggo il PDF…</p><div class="aiout" id="impOut" style="display:none"></div><button class="btn" data-act="close">Annulla</button>`);
+ let L;try{L=await leggiPdf(file);}catch(e){$('#impStato').textContent='Non riesco a leggere il PDF: '+(e.message||e);return;}
+ if(!SAMPLE){$('#impStato').textContent='Per leggere la convocazione serve Claude, che non è disponibile in questa vista.';return;}
+ let opts={modelTier:'complex'};if(L.immagini.length){try{const lim=await SAMPLE.limits();if(lim&&lim.images)opts.images=L.immagini;else{$('#impStato').textContent='Il PDF sembra una scansione senza testo e qui non posso leggere le immagini. Prova con il PDF originale.';return;}}catch(e){}}
+ $('#impStato').textContent=L.immagini.length?'Il PDF è una scansione: Claude legge le immagini delle pagine…':'Claude estrae i dati della convocazione…';
+ const condomini=DB.condomini.map(c=>c.nome).join('; ');
+ const prompt=`Questo è l'avviso di convocazione di un'assemblea di condominio italiano${L.immagini.length?' (in immagine)':''}. Estrai i dati e rispondi SOLO con JSON:
+{"condominio":"nome del condominio come scritto","tipo":"Ordinaria|Straordinaria","c1":{"data":"AAAA-MM-GG","ora":"HH:MM","luogo":"..."},"c2":{"data":"AAAA-MM-GG","ora":"HH:MM","luogo":"..."},"odg":["punto 1","punto 2"]}
+Regole: il luogo senza la parola "presso" iniziale (es. "lo Studio Taddei in Via De Bernardi 65 - Firenze"); se la seconda convocazione ha lo stesso luogo, ripetilo; i punti dell'ordine del giorno uno per elemento, senza numero iniziale, testo fedele; se un dato manca lascia stringa vuota. Condomini gestiti (per riconoscere il nome): ${condomini}.${L.immagini.length?'':'\n\nTESTO DEL PDF:\n'+L.testo.slice(0,15000)}`;
+ const out=$('#impOut');out.style.display='block';const txt=await askClaude(prompt,out,opts);if(!txt){$('#impStato').textContent='Estrazione non riuscita.';return;}
+ let j=null;try{j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));}catch(e){}
+ if(!j){$('#impStato').textContent='Claude non ha restituito dati leggibili. Riprova.';return;}
+ const C=trovaCond(j.condominio);IMP={j,file,condId:C?C.id:(S&&DB.fase!==0?S.condId:DB.condSel),riconosciuto:!!C};anteprimaImp();}
+function anteprimaImp(){const j=IMP.j,c1=j.c1||{},c2=j.c2||{};const inAss=S&&DB.fase===1;
+ const cf=conflitto(inAss?S.id:'',c2.data,c2.ora);
+ dlg(`<h2>Controlla i dati letti dalla convocazione</h2>
+<label class="f">Condominio <span class="muted">(nel PDF: "${esc(j.condominio||'non trovato')}")${IMP.riconosciuto?'':' – non riconosciuto, sceglilo tu'}</span><select id="impCond">${DB.condomini.map(c=>opt(c.id,IMP.condId,c.nome)).join('')}</select></label>
+<div class="row"><div class="seg">${['Ordinaria','Straordinaria'].map(t=>`<button class="P ${(j.tipo||'Ordinaria')===t?'on':''}" data-act="impTipo" data-arg="${t}">${t}</button>`).join('')}</div></div>
+${[['c1','1ª convocazione',c1],['c2','2ª convocazione',c2]].map(([k,l,c])=>`<div class="row" style="align-items:flex-end"><strong style="width:120px">${l}</strong><label class="f">Data<input type="date" id="imp_${k}_data" value="${esc(c.data||'')}"></label><label class="f">Ora<input type="time" id="imp_${k}_ora" value="${esc(c.ora||'')}"></label><label class="f" style="flex:1;min-width:220px">Luogo<input type="text" id="imp_${k}_luogo" value="${esc(c.luogo||'')}"></label></div>`).join('')}
+${cf?`<div class="ko" style="font-weight:600">Attenzione: la 2ª convocazione si sovrappone a ${esc(condNome(cf.condId))} (${dataIt(cf.ass.c2.data)} ore ${esc(cf.ass.c2.ora)}). Cambiala prima di confermare.</div>`:''}
+<label class="f">Ordine del giorno <span class="muted">(un punto per riga)</span><textarea id="impOdg" rows="${Math.min(12,(j.odg||[]).length+2)}">${esc((j.odg||[]).join('\n'))}</textarea></label>
+<label class="chk"><input type="checkbox" id="impAll"> allega il PDF della convocazione agli allegati generali</label>
+<span class="muted">${inAss?'I dati vanno nell\'assemblea aperta se il condominio è lo stesso; se scegli un altro condominio si crea una nuova assemblea.':'Si crea una nuova assemblea nel condominio scelto.'}</span>
+<div class="row"><button class="btn pri" data-act="impOk">Conferma e compila</button><button class="btn" data-act="close">Annulla</button></div>`);}
+function maggDaTitolo(t){t=t.toLowerCase();if(/varie|eventuali|comunicazion/.test(t))return 'INFO';if(/nomina|conferma.*amministrator|revoca|lit[ie]|causa|straordinari|lavori|rifacimento/.test(t))return 'C4';return 'ORD';}
+async function applicaImp(){const g=id=>$('#'+id).value;const condId=g('impCond');
+ const c2d=g('imp_c2_data'),c2o=g('imp_c2_ora');
+ let A=(S&&DB.fase===1&&S.condId===condId)?S:null;
+ const cf=conflitto(A?A.id:'',c2d,c2o);if(cf){toast('La 2ª convocazione si sovrappone a '+condNome(cf.condId)+': cambia data o ora');return;}
+ if(!A){const prec=DB.assemblee.filter(x=>x.condId===condId).sort((x,y)=>(y.ass.c2.data||'').localeCompare(x.ass.c2.data||''))[0];A=nuovaAss(condId);
+  if(prec){A.ass.esercizio=prec.ass.esercizio.replace(/\d{4}/g,y=>String(+y+1));A.ass.numero=String((+prec.ass.numero||0)+1);}DB.assemblee.push(A);apri(A.id);}
+ A.ass.tipo=IMP.j.tipo==='Straordinaria'?'Straordinaria':'Ordinaria';
+ ['c1','c2'].forEach(k=>{A.ass[k].data=g('imp_'+k+'_data');A.ass[k].ora=g('imp_'+k+'_ora');if(g('imp_'+k+'_luogo').trim())A.ass[k].luogo=g('imp_'+k+'_luogo').trim();});
+ const titoli=g('impOdg').split('\n').map(x=>x.replace(/^\s*\d+[).°]?\s*[-–]?\s*/,'').trim()).filter(Boolean);
+ if(titoli.length){A.odg=titoli.map(t=>P(t,'',maggDaTitolo(t),'ord'));A.allegati.forEach(x=>x.punti=[]);A.docHtml='';}
+ if($('#impAll').checked){const id='f'+Date.now().toString(36);BLOBS[id]=IMP.file;idbPut(id,IMP.file);A.allegati.push({id:'g'+Date.now().toString(36),titolo:'Avviso di convocazione',punti:[],fase:'convocazione',da:'',files:[{id,nome:IMP.file.name,tipo:'pdf',pag:0,size:IMP.file.size}]});}
+ IMP=null;$('#dlg').innerHTML='';DB.fase=1;DB.condSel=condId;ULT=-1;render();window.scrollTo(0,0);toast('Convocazione importata: controlla tabella e maggioranza dei punti');}
+
+// =============== EVENTI ===============
+function bersaglio(path){const k=path.split('.');let o=S;if(k[0]==='DB'){o=DB;k.shift();}return[o,k];}
+function setPath(path,val){const[o0,k]=bersaglio(path);let o=o0;for(let i=0;i<k.length-1;i++){if(o[k[i]]==null)o[k[i]]={};o=o[k[i]];}o[k[k.length-1]]=val;}
+function getPath(path){const[o0,k]=bersaglio(path);return k.reduce((o,x)=>o==null?o:o[x],o0);}
+function dlg(html){$('#dlg').innerHTML=`<div class="dlg"><div class="card col">${html}</div></div>`;}
+const paragrafi=(t,cls)=>String(t||'').split(/\n+/).filter(x=>x.trim()).map(x=>`<p${cls?` class="${cls}"`:''}>${esc(x.trim())}</p>`).join('');
+let rqT;
+document.addEventListener('input',e=>{const t=e.target;
+ if(t.id==='editor'){const s=getSelection();if(s.anchorNode){const el=(s.anchorNode.nodeType===1?s.anchorNode:s.anchorNode.parentElement).closest('[data-auto]');if(el)el.dataset.edited='1';}salvaDoc();return;}
+ const b=t.dataset&&t.dataset.bind;if(!b)return;let v=t.type==='checkbox'?t.checked:t.value;
+ if(b==='ass.c2.data'||b==='ass.c2.ora'){const d=b==='ass.c2.data'?v:S.ass.c2.data,o=b==='ass.c2.ora'?v:S.ass.c2.ora;const cf=conflitto(S.id,d,o);
+  if(cf){t.value=getPath(b)||'';dlg(`<h2>Data non disponibile</h2><p>Il ${giornoLungo(cf.ass.c2.data)} alle ore ${esc(cf.ass.c2.ora)} c'è già la 2ª convocazione di <b>${esc(condNome(cf.condId))}</b>. Tra due assemblee servono almeno ${DB.imp.durata} ore (lo cambi in Impostazioni).</p><button class="btn pri" data-act="close">Scegli un altro orario</button>`);return;}}
+ if(b==='DB.imp.durata')v=Math.max(0,+v||0);
+ setPath(b,v);save();
+ if(t.dataset.rer||t.tagName==='SELECT'||t.type==='checkbox'||t.type==='date'||t.type==='time')render();
+ else if(t.dataset.rv){clearTimeout(rqT);rqT=setTimeout(()=>{aggiornaAuto();aggiornaEsiti();if(t.dataset.rq)header();},400);}});
+document.addEventListener('mousedown',e=>{if(e.target.closest('[data-cmd]'))e.preventDefault();});
+document.addEventListener('click',e=>{const c=e.target.closest('[data-cmd]');if(!c)return;if(RANGE&&ED()){ED().focus();const s=getSelection();s.removeAllRanges();s.addRange(RANGE);}document.execCommand(c.dataset.cmd,false,null);salvaDoc();});
+document.addEventListener('change',e=>{const t=e.target;
+ if(t.dataset.up==='__firma'&&t.files&&t.files[0]){(async()=>{const f=t.files[0];let b=f;try{if(!/png/i.test(f.type))b=await riduci(f);}catch(err){}BLOBS.__firma=b;idbPut('__firma',b);DB.firma=true;render();toast('Firma caricata');})();return;}
+ if(t.dataset.up==='__conv'&&t.files&&t.files[0]){importaConv(t.files[0]);t.value='';return;}
+ if(t.dataset.up&&t.files&&t.files.length){caricaFile([...t.files],t.dataset.up);return;}
+ if(t.dataset.ins==='frase'){if(!t.value)return;const p=S.odg[+t.dataset.arg];const html=fraseHtml(p,t.value);t.value='';if(html){inserisciNelPunto(p,html);toast('Frase inserita nel punto '+(+t.dataset.arg+1));}else toast('Questa frase è vuota: scrivila in Impostazioni');return;}
+ const a=t.dataset.actChange;if(!a)return;const arg=t.dataset.arg;
+ if(a==='condSel'){DB.condSel=t.value;render();}
+ if(a==='delega'){const r=S.pres[arg]=S.pres[arg]||{st:'D'};if(t.value==='__altro'){r.del='';r.delNome=r.delNome||'';}else{r.del=t.value;r.delNome=null;}render();}
+ if(a==='escl'){const p=S.odg.find(x=>x.id===S.sv);if(t.checked)p.escl[arg]=true;else delete p.escl[arg];render();}
+ if(a==='aPunto'){const[k,pid]=arg.split('|');const x=S.allegati[+k];x.punti=t.checked?[...new Set([...x.punti,pid])]:x.punti.filter(z=>z!==pid);render();}});
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const a=b.dataset.act,arg=b.dataset.arg;const p=S&&S.odg.find(x=>x.id===S.sv);
+ switch(a){
+ case 'home':salvaDoc();DB.fase=0;if(S)DB.condSel=S.condId;render();window.scrollTo(0,0);break;
+ case 'imp':salvaDoc();DB.prev=DB.fase;DB.fase=9;render();window.scrollTo(0,0);break;
+ case 'torna':DB.fase=DB.prev&&DB.prev!==9?DB.prev:(S?1:0);if(!S&&DB.fase>0)DB.fase=0;render();break;
+ case 'apri':apri(arg);DB.fase=S.stato==='svolta'?3:1;ULT=-1;render();window.scrollTo(0,0);break;
+ case 'nuova':{const prec=DB.assemblee.filter(x=>x.condId===DB.condSel).sort((x,y)=>(y.ass.c2.data||'').localeCompare(x.ass.c2.data||''))[0];const A=nuovaAss(DB.condSel);
+  if(prec){A.ass.esercizio=prec.ass.esercizio.replace(/\d{4}/g,y=>String(+y+1));A.ass.numero=String((+prec.ass.numero||0)+1);A.ass.c1.luogo=prec.ass.c1.luogo;A.ass.c2.luogo=prec.ass.c2.luogo;}
+  DB.assemblee.push(A);apri(A.id);DB.fase=1;ULT=-1;render();window.scrollTo(0,0);toast('Nuova assemblea creata');break;}
+ case 'fase':salvaDoc();DB.fase=+arg;ULT=-1;render();window.scrollTo(0,0);break;
+ case 'tipo':S.ass.tipo=arg;render();break;
+ case 'reset':DB=ESEMPIO();S=null;ULT=-1;render();toast('Dati di esempio ricaricati');break;
+ case 'addP':S.odg.push(P('Nuovo punto','','ORD','ord'));render();break;
+ case 'delP':{const id=S.odg[+arg].id;S.odg.splice(+arg,1);S.allegati.forEach(x=>x.punti=x.punti.filter(z=>z!==id));render();break;}
+ case 'mv':{const[i,d]=arg.split('|').map(Number);const j=i+d;[S.odg[i],S.odg[j]]=[S.odg[j],S.odg[i]];render();break;}
+ case 'copiaDa':dlg(`<h2>Copia l'ordine del giorno da…</h2>${S.storico.map(s=>`<div class="row" style="justify-content:space-between;border-top:1px solid #EDF0F4;padding-top:8px"><span><strong>${esc(s.ass.tipo)} del ${dataIt(s.ass.c2.data)}</strong><br><span class="muted">${s.odg.map(x=>esc(x.titolo)).join(' · ')}</span></span><button class="btn sm pri" data-act="copiaOk" data-arg="${s.id}">Copia</button></div>`).join('')}
+<label class="chk"><input type="checkbox" id="annoPiu" checked> aggiorna gli anni (+1)</label><label class="chk"><input type="checkbox" id="sostituisci" checked> sostituisci l'ordine del giorno attuale</label><button class="btn" data-act="close">Annulla</button>`);break;
+ case 'copiaOk':{const s=S.storico.find(x=>x.id===arg);const piu=$('#annoPiu').checked,sost=$('#sostituisci').checked;const up=t=>piu?t.replace(/\b(20\d\d)\b/g,y=>String(+y+1)):t;
+  const nuovi=s.odg.map(x=>P(up(x.titolo),x.tab,x.magg,x.chi,x.note));if(sost){S.odg=nuovi;S.allegati.forEach(x=>x.punti=[]);}else S.odg.push(...nuovi);$('#dlg').innerHTML='';render();toast('Ordine del giorno copiato');break;}
+ case 'close':$('#dlg').innerHTML='';IMP=null;break;
+ case 'impTipo':IMP.j.tipo=arg;document.querySelectorAll('[data-act=impTipo]').forEach(x=>x.classList.toggle('on',x.dataset.arg===arg));break;
+ case 'impOk':applicaImp();break;
+ case 'addA':S.allegati.push({id:'g'+Date.now().toString(36),titolo:'Nuovo allegato',punti:arg?[arg]:[],fase:S.ass.oraAppello?'assemblea':'convocazione',da:'',files:[]});render();break;
+ case 'delA':S.allegati=S.allegati.filter(x=>x.id!==arg);render();break;
+ case 'delF':{const[aid,fid]=arg.split('|');const x=S.allegati.find(y=>y.id===aid);x.files=x.files.filter(f=>f.id!==fid);delete BLOBS[fid];idbDel(fid);render();break;}
+ case 'vedi':{const bl=await getBlob(arg);if(!bl){toast('File non trovato su questo dispositivo');break;}dlg(`<img src="${URL.createObjectURL(bl)}" alt="Anteprima" style="max-width:100%;max-height:70vh;object-fit:contain"><button class="btn" data-act="close">Chiudi</button>`);break;}
+ case 'addFrase':{const k='m'+Date.now().toString(36);DB.frasi[k]={nome:'Nuova frase',testo:''};render();break;}
+ case 'delFrase':delete DB.frasi[arg];render();break;
+ case 'sv':{S.sv=arg;const q=S.odg.find(x=>x.id===arg);if(q){S.cur=q.id;if(!q.inserito&&ED())inserisciSezione(q);}render();const sc=q&&sezione(q);if(sc)sc.scrollIntoView({block:'start',behavior:'smooth'});break;}
+ case 'oraApp':S.ass.oraAppello=ora();render();break;
+ case 'oraChiusura':S.ass.chiusura=ora();render();break;
+ case 'tuttiAss':S.pres={};render();break;
+ case 'pres':{const[pid,st]=arg.split('|');const old=(S.pres[pid]||{}).st||'A';const r=S.pres[pid]=S.pres[pid]||{};r.st=st;
+  if((st==='P'||st==='V')&&old!=='P'&&old!=='V'){r.in=ora();if(S.ass.oraAppello&&S.cur)movimento(`Alle ore ${oraIt(r.in)} entra ${nm(pid)}${st==='V'?' in videoconferenza':''}.`);}
+  if(st==='D'&&r.del===undefined){r.del='';r.delNome=null;}render();break;}
+ case 'esce':{const r=S.pres[arg];r.st='U';r.out=ora();if(S.cur)movimento(`Alle ore ${oraIt(r.out)} esce ${nm(arg)}.`);render();break;}
+ case 'rientra':{const r=S.pres[arg];r.st='P';r.in=ora();if(S.cur)movimento(`Alle ore ${oraIt(r.in)} rientra ${nm(arg)}.`);render();break;}
+ case 'voto':{const[pid,v]=arg.split('|');p.voti[pid]=p.voti[pid]===v?'':v;render();break;}
+ case 'tutti':calc(p).iv.forEach(r=>p.voti[r.pid]=arg);render();break;
+ case 'chiudi':{const q=S.odg[+arg];q.snap=JSON.parse(JSON.stringify(calc(q)));q.chiuso=true;const sec=sezione(q)||inserisciSezione(q);
+  if(sec&&!MAGG[q.magg].info&&!sec.querySelector('mark[data-esito]'))sec.insertAdjacentHTML('beforeend',`<p class="esito-auto">${markE(q,'frase')}</p>`);
+  aggiornaEsiti();const es=esitoTesti(q);const nx=S.odg[+arg+1];S.sv=nx?nx.id:'fine';if(nx){S.cur=nx.id;if(!nx.inserito)inserisciSezione(nx);}render();toast('Punto '+(+arg+1)+' chiuso'+(es&&!es.ok?': NON approvato, controlla la frase nel verbale':''));break;}
+ case 'riapri':{const q=S.odg[+arg];q.chiuso=false;q.snap=null;render();break;}
+ case 'insAppunti':{const q=S.odg[+arg];if(!q.appunti.trim()){toast('Gli appunti sono vuoti');break;}inserisciNelPunto(q,paragrafi(q.appunti));toast('Appunti inseriti nel verbale');break;}
+ case 'insNote':{const q=S.odg[+arg];inserisciNelPunto(q,paragrafi(q.note));toast('Note inserite nel verbale');break;}
+ case 'insOra':inserisciQui(esc(oraIt(ora())));break;
+ case 'aggPres':aggiornaAuto(true);if(!ED().querySelector('[data-auto="appello"]'))inserisciQui(`<div data-auto="appello">${snAppello()}</div>`);toast('Presenti aggiornati');break;
+ case 'nuovaBozza':dlg(`<h2>Ricominciare il verbale?</h2><p>Il testo attuale viene sostituito da una nuova bozza con intestazione, convocazione, ordine del giorno e presenti. I punti si reinseriscono quando li apri.</p><div class="row"><button class="btn pri" data-act="nuovaOk">Ricomincia</button><button class="btn" data-act="close">Annulla</button></div>`);break;
+ case 'nuovaOk':S.docHtml=bozzaIniziale();S.odg.forEach(x=>x.inserito=false);S.cur=null;$('#dlg').innerHTML='';ULT=-1;render();break;
+ case 'insChiusura':{if(!S.ass.chiusura)S.ass.chiusura=ora();const ed=ED();const old=ed.querySelector('section[data-chiusura]');if(old)old.remove();const s=document.createElement('section');s.dataset.chiusura='1';s.innerHTML=snChiusura();ed.appendChild(s);S.stato='svolta';salvaDoc();render();s.scrollIntoView({block:'start'});toast('Chiusura inserita');break;}
+ case 'mic':if(!DICTNS){toast('Dettatura non disponibile qui: usa il microfono della tastiera del tablet');break;}if(DICT.live){try{await DICTNS.stop();}catch(err){}}else{DICTNS.start().catch(err=>toast(err&&err.code==='not_granted'?'Microfono non autorizzato':'Dettatura non avviata'));}break;
+ case 'bozza':{const q=S.odg[+arg],out=$('#aiOut');out.style.display='block';const pres=Object.keys(S.persone).filter(x=>presenza(x).in).map(nm).join(', ');
+  const txt=await askClaude(`Sei il segretario di un'assemblea di condominio in Italia. Riscrivi gli appunti come paragrafo di verbale per il punto all'ordine del giorno indicato. ${REGOLE}\n\nPunto: ${q.titolo}\nPresenti: ${pres}\nAppunti:\n${q.appunti||'(vuoti)'}`,out);
+  if(txt){out.dataset.txt=txt;const r=document.createElement('div');r.className='row';r.style.marginTop='8px';r.innerHTML=`<button class="btn pri sm" data-act="usaBozza" data-arg="${arg}">Inserisci nel verbale</button><button class="btn sm" data-act="bozza" data-arg="${arg}">Rigenera</button>`;out.appendChild(r);}break;}
+ case 'usaBozza':{const q=S.odg[+arg];inserisciNelPunto(q,paragrafi($('#aiOut').dataset.txt));toast('Inserito nel verbale');break;}
+ case 'sugg':{const i=+arg,q=S.odg[i],out=$('#sug-'+i);out.style.display='block';
+  const txt=await askClaude(`Sei un esperto di amministrazione condominiale italiana. Per il punto all'ordine del giorno suggerisci tabella, maggioranza e chi vota. Usa SOLO i codici dati.\nTabelle: ${S.tabelle.map(t=>t.id+'='+t.nome).join('; ')}\nMaggioranze: ${Object.entries(MAGG).map(([k,m])=>k+'='+m.nome).join('; ')}\nChi vota: ${Object.entries(CHI).map(([k,v])=>k+'='+v).join('; ')}\nPunto: ${q.titolo}\nNote: ${q.note||'(nessuna)'}\nRispondi SOLO con JSON: {"tab":"","magg":"","chi":"","ripartizione":"una frase su come si ripartisce la spesa","motivo":"max 2 frasi con articoli"}`,out);
+  if(!txt)break;let j=null;try{j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));}catch(err){}if(!j)break;SUG[i]=j;
+  out.textContent=`Tabella: ${j.tab} · ${(MAGG[j.magg]||{}).nome||j.magg} · Vota: ${CHI[j.chi]||j.chi}\nRipartizione: ${j.ripartizione||''}\nPerché: ${j.motivo||''}`;
+  const r=document.createElement('div');r.className='row';r.style.marginTop='8px';r.innerHTML=`<button class="btn pri sm" data-act="applSug" data-arg="${i}">Applica</button><span class="muted">Verifica col regolamento del condominio.</span>`;out.appendChild(r);break;}
+ case 'applSug':{const i=+arg,j=SUG[i],q=S.odg[i];if(!j)break;if(S.tabelle.find(t=>t.id===j.tab))q.tab=j.tab===S.ass.tab?'':j.tab;if(MAGG[j.magg])q.magg=j.magg;if(CHI[j.chi])q.chi=j.chi;render();toast('Suggerimento applicato');break;}
+ case 'askDlg':dlg(`<h2>Chiedi a Claude</h2><span class="muted">Dubbi su norme e maggioranze. Risposta da verificare.</span><textarea id="askQ" rows="3" placeholder="es. il conduttore vota sugli orari del riscaldamento?"></textarea><div class="row"><button class="btn ai" data-act="ask">Chiedi</button><button class="btn" data-act="close">Chiudi</button></div><div class="aiout" id="askA"></div>`);$('#askQ').focus();break;
+ case 'ask':await askClaude(`Sei un esperto di diritto condominiale italiano e assisti un amministratore. Rispondi breve e pratico, cita gli articoli (c.c., disp. att.) e segnala se la questione è controversa.\nDomanda: ${$('#askQ').value}`,$('#askA'));break;
+ case 'delFirma':DB.firma=false;delete BLOBS.__firma;idbDel('__firma');render();break;
+ case 'copia':try{await navigator.clipboard.writeText(ED().innerText);toast('Testo copiato');}catch(err){toast('Copia non riuscita');}break;
+ case 'rivedi':await askClaude(`Rileggi questo verbale di assemblea condominiale italiana. Elenca in punti brevi: refusi, frasi poco chiare, incoerenze (nomi, numeri, orari, lettere degli allegati), parti mancanti. Non riscriverlo. Se è tutto a posto, dillo in una riga.\n\n${ED().innerText}`,$('#revOut'),{modelTier:'complex'});break;
+ case 'pdf':{const lbl=b.textContent;b.disabled=true;b.textContent='Preparo il PDF…';try{const r=await creaPDF(arg);const nome=((arg==='firma'?'Verbale da firmare ':'Verbale e allegati ')+S.ass.numero+' '+condNome(S.condId)).replace(/[^\w\- ]+/g,'').replace(/\s+/g,'_')+'.pdf';
+  if(r.errori.length)toast('Attenzione: '+r.errori.join('; '));if(!DL)toast('Il salvataggio file non è disponibile in questa vista');else{try{await DL.save({filename:nome,data:new Blob([r.bytes],{type:'application/pdf'})});toast('PDF di '+r.pagine+' pagine pronto');}catch(err){if(err&&err.code!=='declined')toast('Salvataggio non riuscito');}}}
+  catch(err){toast('Errore nel PDF: '+(err.message||err));}b.disabled=false;b.textContent=lbl;break;}
+ }});
+render();
+</script>
+</body>
+</html>
